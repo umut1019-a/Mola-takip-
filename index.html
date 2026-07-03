@@ -504,6 +504,8 @@ let chartRange = 7;
 let currentPeriod = 'today';
 let tickInterval = null;
 let hasAlerted = false;
+let lastAlertTime = 0;
+let audioCtx = null;
 
 const TYPE_LABEL = {mola: 'Mola', is: 'İş Çıkışı'};
 const WEEKDAY_LABELS = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
@@ -544,10 +546,41 @@ function toggleTheme(){
   drawChart();
 }
 
+function ensureAudio(){
+  if(!audioCtx){
+    try{
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }catch(e){ audioCtx = null; }
+  }
+  if(audioCtx && audioCtx.state === 'suspended'){
+    audioCtx.resume().catch(()=>{});
+  }
+}
+
+function playBeep(){
+  if(!audioCtx) return;
+  const now = audioCtx.currentTime;
+  [0, 0.22].forEach(offset=>{
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, now + offset);
+    gain.gain.exponentialRampToValueAtTime(0.35, now + offset + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.18);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now + offset);
+    osc.stop(now + offset + 0.2);
+  });
+}
+
 function startSession(type){
   if(activeSession) return;
+  ensureAudio();
   activeSession = {start: Date.now(), type, note: ''};
   hasAlerted = false;
+  lastAlertTime = 0;
   document.getElementById('noteInput').value = '';
   startTick();
   save();
@@ -594,9 +627,16 @@ function checkAlert(){
   const card = document.getElementById('timerCard');
   if(elapsedMin >= sessionAlertMinutes){
     card.classList.add('alerting');
+    const now = Date.now();
     if(!hasAlerted){
       hasAlerted = true;
+      lastAlertTime = now;
       if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
+      playBeep();
+    } else if(now - lastAlertTime >= 60000){
+      lastAlertTime = now;
+      if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
+      playBeep();
     }
   }
 }
@@ -717,6 +757,7 @@ function updateAlertMinutes(){
   const val = parseInt(document.getElementById('alertInput').value, 10);
   sessionAlertMinutes = isNaN(val) ? 0 : val;
   hasAlerted = false;
+  lastAlertTime = 0;
   save();
 }
 
