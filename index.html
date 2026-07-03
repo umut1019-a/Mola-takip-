@@ -1140,8 +1140,24 @@ window.addEventListener('resize', drawChart);
 })();
 
 if('serviceWorker' in navigator){
+  // Yeni sürüm devreye girdiğinde sayfayı otomatik yenile
+  let swRefreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if(swRefreshing) return;
+    swRefreshing = true;
+    window.location.reload();
+  });
+
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+    navigator.serviceWorker.register('service-worker.js').then((reg) => {
+      // Sayfa her açıldığında/öne geldiğinde güncelleme olup olmadığını kontrol et
+      reg.update().catch(()=>{});
+      document.addEventListener('visibilitychange', () => {
+        if(document.visibilityState === 'visible'){
+          reg.update().catch(()=>{});
+        }
+      });
+    }).catch(()=>{});
   });
 }
 </script>
