@@ -378,6 +378,64 @@
     font-size:11px;
     margin-top:18px;
   }
+
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.5);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:1000;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-box{
+    background:var(--card);
+    border-radius:16px;
+    padding:20px;
+    width:100%;
+    max-width:400px;
+    box-shadow:0 12px 40px rgba(0,0,0,0.35);
+  }
+  .modal-title{
+    font-size:15px;
+    font-weight:600;
+    color:var(--ink);
+    margin-bottom:14px;
+  }
+  .modal-textarea{
+    width:100%;
+    min-height:90px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:13px;
+    font-family:inherit;
+    background:var(--input-bg);
+    color:var(--ink);
+    resize:vertical;
+    margin-bottom:16px;
+  }
+  .modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+  }
+  .modal-btn{
+    padding:10px 18px;
+    font-size:13px;
+    border-radius:10px;
+  }
+  .modal-btn.cancel{
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--muted);
+  }
+  .modal-btn.save{
+    background:var(--mola);
+    color:#fff;
+  }
 </style>
 </head>
 <body>
@@ -435,10 +493,6 @@
     <div class="settings-row">
       <span>Tek mola uyarı süresi (dakika)</span>
       <input type="number" id="alertInput" min="0" step="1" onchange="updateAlertMinutes()">
-    </div>
-    <div class="settings-row">
-      <span>Bildirim ile takip (Android)</span>
-      <input type="checkbox" id="notifToggle" onchange="toggleNotifSetting()" style="width:20px; height:20px;">
     </div>
   </div>
 
@@ -499,6 +553,17 @@
   <div class="footer-note">Veriler bu tarayıcıda saklanır (localStorage)</div>
 </div>
 
+<div class="modal-overlay" id="noteModalOverlay" onclick="if(event.target===this) closeNoteModal()">
+  <div class="modal-box">
+    <div class="modal-title">Notu Düzenle</div>
+    <textarea id="modalNoteInput" class="modal-textarea" placeholder="Not ekle..." maxlength="200"></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeNoteModal()">İptal</button>
+      <button class="modal-btn save" onclick="saveNoteModal()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const STORAGE_KEY = 'mola_takip_data_v2';
 const ACTIVE_KEY = 'mola_takip_active_v2';
@@ -511,14 +576,14 @@ let activeSession = JSON.parse(localStorage.getItem(ACTIVE_KEY) || 'null');
 let dailyLimit = parseInt(localStorage.getItem(LIMIT_KEY) || '60', 10);
 let sessionAlertMinutes = parseInt(localStorage.getItem(ALERT_KEY) || '15', 10);
 let theme = localStorage.getItem(THEME_KEY) || 'light';
-let notifEnabled = localStorage.getItem('mola_takip_notif_v2') === '1';
-let notifInterval = null;
 let chartRange = 7;
 let currentPeriod = 'today';
 let tickInterval = null;
 let hasAlerted = false;
 let lastAlertTime = 0;
 let audioCtx = null;
+let editingKey = null;
+let editingIdx = null;
 
 const TYPE_LABEL = {mola: 'Mola', is: 'Dış Ziyaret'};
 const WEEKDAY_LABELS = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
@@ -588,43 +653,6 @@ function playBeep(){
   });
 }
 
-function toggleNotifSetting(){
-  notifEnabled = document.getElementById('notifToggle').checked;
-  localStorage.setItem('mola_takip_notif_v2', notifEnabled ? '1' : '0');
-  if(notifEnabled && 'Notification' in window && Notification.permission === 'default'){
-    Notification.requestPermission();
-  }
-}
-
-function showLiveNotification(){
-  if(!notifEnabled || !activeSession) return;
-  if(!('serviceWorker' in navigator) || !('Notification' in window)) return;
-  if(Notification.permission !== 'granted') return;
-  const elapsedMin = Math.floor((Date.now() - activeSession.start) / 60000);
-  const label = TYPE_LABEL[activeSession.type];
-  navigator.serviceWorker.ready.then(reg=>{
-    reg.showNotification(label + ' devam ediyor', {
-      body: 'Süre: ' + elapsedMin + ' dakika' + (activeSession.note ? ' · ' + activeSession.note : ''),
-      tag: 'mola-timer',
-      renotify: false,
-      silent: true,
-      requireInteraction: true,
-      icon: 'icon-192.png',
-      badge: 'icon-192.png',
-      actions: [{ action: 'stop', title: 'Bitir' }]
-    });
-  }).catch(()=>{});
-}
-
-function closeLiveNotification(){
-  if(!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.ready.then(reg=>{
-    reg.getNotifications({tag:'mola-timer'}).then(list=>{
-      list.forEach(n=>n.close());
-    });
-  }).catch(()=>{});
-}
-
 function startSession(type){
   if(activeSession) return;
   ensureAudio();
@@ -635,10 +663,6 @@ function startSession(type){
   startTick();
   save();
   renderAll();
-  showLiveNotification();
-  if(notifEnabled){
-    notifInterval = setInterval(showLiveNotification, 60000);
-  }
 }
 
 function updateNote(){
@@ -656,8 +680,6 @@ function stopSession(){
   activeSession = null;
   hasAlerted = false;
   stopTick();
-  if(notifInterval){ clearInterval(notifInterval); notifInterval = null; }
-  closeLiveNotification();
   document.getElementById('timerCard').classList.remove('alerting');
   save();
   renderAll();
@@ -787,11 +809,27 @@ function editNote(key, originalIdx){
   const realIdx = findEntryByOriginalIdx(key, originalIdx);
   if(realIdx === -1) return;
   const entry = data[key][realIdx];
-  const newNote = prompt('Not:', entry.note || '');
-  if(newNote === null) return;
-  entry.note = newNote;
+  editingKey = key;
+  editingIdx = realIdx;
+  const input = document.getElementById('modalNoteInput');
+  input.value = entry.note || '';
+  document.getElementById('noteModalOverlay').classList.add('show');
+  input.focus();
+}
+
+function closeNoteModal(){
+  document.getElementById('noteModalOverlay').classList.remove('show');
+  editingKey = null;
+  editingIdx = null;
+}
+
+function saveNoteModal(){
+  if(editingKey === null || editingIdx === null) return;
+  const newNote = document.getElementById('modalNoteInput').value;
+  data[editingKey][editingIdx].note = newNote;
   save();
   renderList();
+  closeNoteModal();
 }
 
 function deleteEntry(key, originalIdx){
@@ -1085,31 +1123,11 @@ function renderAll(){
 applyTheme();
 document.getElementById('limitInput').value = dailyLimit;
 document.getElementById('alertInput').value = sessionAlertMinutes;
-document.getElementById('notifToggle').checked = notifEnabled;
 if(activeSession){
   startTick();
-  if(notifEnabled){ notifInterval = setInterval(showLiveNotification, 60000); }
 }
 renderAll();
 window.addEventListener('resize', drawChart);
-
-// Bildirimdeki "Bitir" aksiyonundan gelen komut
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.addEventListener('message', (event)=>{
-    if(event.data && event.data.type === 'stop-session'){
-      stopSession();
-    }
-  });
-}
-
-// Bildirime dokunup uygulama kapalıyken açıldıysa
-(function(){
-  const params = new URLSearchParams(window.location.search);
-  if(params.get('stop') === '1' && activeSession){
-    stopSession();
-    window.history.replaceState({}, '', window.location.pathname);
-  }
-})();
 
 // Kısayoldan (widget benzeri) gelen otomatik başlatma
 (function(){

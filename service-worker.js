@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mola-takip-v5';
+const CACHE_NAME = 'mola-takip-v6';
 const ASSETS = [
   './index.html',
   './manifest.json',
@@ -38,22 +38,3 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-self.addEventListener('notificationclick', (event) => {
-  const action = event.action;
-  event.notification.close();
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      if (action === 'stop') {
-        for (const client of clientList) {
-          client.postMessage({ type: 'stop-session' });
-          if ('focus' in client) client.focus();
-          return;
-        }
-        return self.clients.openWindow('./index.html?stop=1');
-      } else {
-        if (clientList.length > 0) return clientList[0].focus();
-        return self.clients.openWindow('./index.html');
-      }
-    })
-  );
-});
