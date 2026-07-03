@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mola & Çıkış Takip</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f6f4f">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#fafaf9;
+    --card:#ffffff;
+    --ink:#1c1c1a;
+    --muted:#8a8a85;
+    --line:#eceae6;
+    --mola:#2f6f4f;
+    --mola-soft:#e7f2ec;
+    --is:#2f5f8f;
+    --is-soft:#e6eef6;
+    --danger:#b5482f;
+    --danger-soft:#fbe9e4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:32px 16px 60px;
+    min-height:100vh;
+  }
+  .wrap{width:100%; max-width:520px;}
+  h1{
+    font-size:20px;
+    font-weight:600;
+    margin:0 0 4px;
+    letter-spacing:-0.2px;
+  }
+  .sub{color:var(--muted); font-size:13px; margin-bottom:24px;}
+
+  .banner{
+    background:var(--danger-soft);
+    color:var(--danger);
+    border-radius:12px;
+    padding:12px 16px;
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:16px;
+    display:none;
+    align-items:center;
+    gap:8px;
+  }
+  .banner.show{display:flex;}
+
+  .timer-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:32px 24px;
+    text-align:center;
+    margin-bottom:20px;
+  }
+  .status{
+    font-size:12px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:12px;
+  }
+  .status.active-mola{color:var(--mola);}
+  .status.active-is{color:var(--is);}
+  .clock{
+    font-size:44px;
+    font-weight:300;
+    font-variant-numeric:tabular-nums;
+    margin-bottom:24px;
+    letter-spacing:1px;
+  }
+  button{
+    border:none;
+    border-radius:12px;
+    padding:14px 24px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    transition:opacity .15s ease, transform .1s ease;
+  }
+  button:active{transform:scale(0.97);}
+  .btn-row{display:flex; gap:10px; justify-content:center;}
+  .btn-mola{background:var(--mola); color:#fff;}
+  .btn-is{background:var(--is); color:#fff;}
+  .btn-stop{background:var(--danger); color:#fff; width:100%; padding:14px 32px;}
+
+  .summary{
+    display:flex;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .stat{
+    flex:1;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 10px;
+    text-align:center;
+  }
+  .stat .num{font-size:19px; font-weight:600;}
+  .stat .label{font-size:11px; color:var(--muted); margin-top:2px;}
+  .stat.mola .num{color:var(--mola);}
+  .stat.is .num{color:var(--is);}
+
+  .settings-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:13px;
+  }
+  .settings-card input{
+    width:60px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:6px 8px;
+    font-size:13px;
+    text-align:center;
+  }
+
+  .chart-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:18px 20px;
+    margin-bottom:16px;
+  }
+  .chart-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+  }
+  .chart-header span{font-size:13px; font-weight:600; color:var(--muted);}
+  .chart-header .toggles{display:flex; gap:6px;}
+  .chart-header .toggles button{
+    padding:5px 10px;
+    font-size:11px;
+    border-radius:8px;
+    background:var(--bg);
+    color:var(--muted);
+    border:1px solid var(--line);
+    font-weight:600;
+  }
+  .chart-header .toggles button.on{
+    background:var(--ink);
+    color:#fff;
+    border-color:var(--ink);
+  }
+  .legend{display:flex; gap:14px; font-size:11px; color:var(--muted); margin-top:8px;}
+  .legend span{display:flex; align-items:center; gap:5px;}
+  .dot{width:8px; height:8px; border-radius:2px; display:inline-block;}
+  .dot.mola{background:var(--mola);}
+  .dot.is{background:var(--is);}
+  canvas{width:100%; display:block;}
+
+  .list-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    overflow:hidden;
+    margin-bottom:16px;
+  }
+  .list-header{
+    padding:16px 20px 10px;
+    font-size:13px;
+    font-weight:600;
+    color:var(--muted);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+  }
+  .list-header select{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:5px 8px;
+    font-size:12px;
+    background:var(--bg);
+    color:var(--ink);
+  }
+  .entry{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 20px;
+    border-top:1px solid var(--line);
+    font-size:14px;
+  }
+  .tag{
+    font-size:10px;
+    font-weight:700;
+    padding:3px 7px;
+    border-radius:6px;
+    text-transform:uppercase;
+    letter-spacing:0.3px;
+    margin-right:10px;
+  }
+  .tag.mola{background:var(--mola-soft); color:var(--mola);}
+  .tag.is{background:var(--is-soft); color:var(--is);}
+  .entry .times{color:var(--ink); display:flex; align-items:center;}
+  .entry .times .arrow{color:var(--muted); margin:0 6px;}
+  .entry .dur{font-weight:600; font-variant-numeric:tabular-nums;}
+  .entry .dur.mola{color:var(--mola);}
+  .entry .dur.is{color:var(--is);}
+  .entry .del{
+    background:none;
+    border:none;
+    color:var(--muted);
+    font-size:16px;
+    padding:2px 6px;
+    cursor:pointer;
+    margin-left:8px;
+  }
+  .entry .del:hover{color:var(--danger);}
+  .row-right{display:flex; align-items:center;}
+  .empty{
+    padding:28px 20px;
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+  }
+  .export-btn{
+    width:100%;
+    background:var(--ink);
+    color:#fff;
+    padding:13px;
+    border-radius:12px;
+    font-size:14px;
+  }
+  .footer-note{
+    text-align:center;
+    color:var(--muted);
+    font-size:11px;
+    margin-top:18px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Mola & Çıkış Takip</h1>
+  <div class="sub">Mola ya da iş için ofisten çıkışlarını ayrı ayrı kaydet</div>
+
+  <div class="banner" id="limitBanner"></div>
+
+  <div class="timer-card">
+    <div class="status" id="statusText">AKTİF DEĞİL</div>
+    <div class="clock" id="clockDisplay">00:00:00</div>
+    <div id="idleButtons" class="btn-row">
+      <button class="btn-mola" onclick="startSession('mola')">Molaya Başla</button>
+      <button class="btn-is" onclick="startSession('is')">İş İçin Çık</button>
+    </div>
+    <div id="activeButtons" style="display:none;">
+      <button class="btn-stop" onclick="stopSession()">Bitir</button>
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="stat mola">
+      <div class="num" id="todayMolaTotal">0dk</div>
+      <div class="label">Bugün Mola</div>
+    </div>
+    <div class="stat is">
+      <div class="num" id="todayIsTotal">0dk</div>
+      <div class="label">Bugün İş Çıkışı</div>
+    </div>
+    <div class="stat">
+      <div class="num" id="todayCount">0</div>
+      <div class="label">Toplam Kayıt</div>
+    </div>
+  </div>
+
+  <div class="settings-card">
+    <span>Günlük mola limiti (dakika)</span>
+    <input type="number" id="limitInput" min="0" step="5" onchange="updateLimit()">
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <span>Günlük Özet</span>
+      <div class="toggles">
+        <button id="range7" class="on" onclick="setRange(7)">7 gün</button>
+        <button id="range30" onclick="setRange(30)">30 gün</button>
+      </div>
+    </div>
+    <canvas id="chart" height="140"></canvas>
+    <div class="legend">
+      <span><i class="dot mola"></i>Mola</span>
+      <span><i class="dot is"></i>İş Çıkışı</span>
+    </div>
+  </div>
+
+  <div class="list-card">
+    <div class="list-header">
+      <span>Kayıt Geçmişi</span>
+      <select id="dateSelect" onchange="renderList()"></select>
+    </div>
+    <div id="entryList"></div>
+  </div>
+
+  <button class="export-btn" onclick="exportExcel()">Excel'e Aktar (.xlsx)</button>
+
+  <div class="footer-note">Veriler bu tarayıcıda saklanır (localStorage)</div>
+</div>
+
+<script>
+const STORAGE_KEY = 'mola_takip_data_v2';
+const ACTIVE_KEY = 'mola_takip_active_v2';
+const LIMIT_KEY = 'mola_takip_limit_v2';
+
+let data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+let activeSession = JSON.parse(localStorage.getItem(ACTIVE_KEY) || 'null');
+let dailyLimit = parseInt(localStorage.getItem(LIMIT_KEY) || '60', 10);
+let chartRange = 7;
+let tickInterval = null;
+
+const TYPE_LABEL = {mola: 'Mola', is: 'İş Çıkışı'};
+
+function todayKey(d = new Date()){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function fmtTime(d){
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+function fmtDuration(ms, withSeconds=false){
+  const totalSec = Math.floor(ms/1000);
+  const h = Math.floor(totalSec/3600);
+  const m = Math.floor((totalSec%3600)/60);
+  const s = totalSec%60;
+  if(withSeconds){
+    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }
+  if(h>0) return h+'sa '+m+'dk';
+  return m+'dk';
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  localStorage.setItem(ACTIVE_KEY, JSON.stringify(activeSession));
+  localStorage.setItem(LIMIT_KEY, String(dailyLimit));
+}
+
+function startSession(type){
+  if(activeSession) return;
+  activeSession = {start: Date.now(), type};
+  startTick();
+  save();
+  renderAll();
+}
+
+function stopSession(){
+  if(!activeSession) return;
+  const end = Date.now();
+  const key = todayKey(new Date(activeSession.start));
+  if(!data[key]) data[key] = [];
+  data[key].push({start: activeSession.start, end, type: activeSession.type});
+  activeSession = null;
+  stopTick();
+  save();
+  renderAll();
+}
+
+function startTick(){
+  updateClock();
+  tickInterval = setInterval(()=>{ updateClock(); renderSummary(); }, 1000);
+}
+function stopTick(){
+  clearInterval(tickInterval);
+  tickInterval = null;
+  document.getElementById('clockDisplay').textContent = '00:00:00';
+}
+function updateClock(){
+  if(!activeSession) return;
+  const elapsed = Date.now() - activeSession.start;
+  document.getElementById('clockDisplay').textContent = fmtDuration(elapsed, true);
+}
+
+function updateButtonState(){
+  const idle = document.getElementById('idleButtons');
+  const active = document.getElementById('activeButtons');
+  const status = document.getElementById('statusText');
+  const stopBtn = document.querySelector('.btn-stop');
+  if(activeSession){
+    idle.style.display = 'none';
+    active.style.display = 'block';
+    status.textContent = TYPE_LABEL[activeSession.type].toUpperCase() + ' DEVAM EDİYOR';
+    status.className = 'status active-' + activeSession.type;
+    stopBtn.textContent = TYPE_LABEL[activeSession.type] + 'yı Bitir'.replace('İş Çıkışıyı','İş Çıkışını');
+    stopBtn.textContent = (activeSession.type === 'mola' ? 'Molayı Bitir' : 'İş Çıkışını Bitir');
+  } else {
+    idle.style.display = 'flex';
+    active.style.display = 'none';
+    status.textContent = 'AKTİF DEĞİL';
+    status.className = 'status';
+  }
+}
+
+function populateDateSelect(){
+  const sel = document.getElementById('dateSelect');
+  const keys = Object.keys(data).sort().reverse();
+  const tKey = todayKey();
+  if(!keys.includes(tKey)) keys.unshift(tKey);
+  const prevVal = sel.value;
+  sel.innerHTML = '';
+  keys.forEach(k=>{
+    const opt = document.createElement('option');
+    opt.value = k;
+    opt.textContent = k === tKey ? 'Bugün ('+k+')' : k;
+    sel.appendChild(opt);
+  });
+  sel.value = keys.includes(prevVal) ? prevVal : tKey;
+}
+
+function renderList(){
+  const sel = document.getElementById('dateSelect');
+  const key = sel.value || todayKey();
+  const entries = (data[key] || []).slice().sort((a,b)=>b.start-a.start);
+  const list = document.getElementById('entryList');
+  list.innerHTML = '';
+  if(entries.length === 0){
+    list.innerHTML = '<div class="empty">Bu tarihte kayıt yok</div>';
+    return;
+  }
+  entries.forEach((e, idx)=>{
+    const div = document.createElement('div');
+    div.className = 'entry';
+    const dur = e.end - e.start;
+    div.innerHTML = `
+      <div class="times">
+        <span class="tag ${e.type}">${TYPE_LABEL[e.type]}</span>
+        ${fmtTime(new Date(e.start))}<span class="arrow">→</span>${fmtTime(new Date(e.end))}
+      </div>
+      <div class="row-right">
+        <span class="dur ${e.type}">${fmtDuration(dur)}</span>
+        <button class="del" onclick="deleteEntry('${key}', ${entries.length-1-idx})">✕</button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function deleteEntry(key, originalIdx){
+  const original = data[key];
+  const sorted = original.slice().sort((a,b)=>b.start-a.start);
+  const target = sorted[sorted.length - 1 - originalIdx];
+  const realIdx = original.findIndex(e=>e.start===target.start && e.end===target.end);
+  if(realIdx > -1){
+    original.splice(realIdx,1);
+    if(original.length === 0) delete data[key];
+    save();
+    populateDateSelect();
+    renderAll();
+  }
+}
+
+function updateLimit(){
+  const val = parseInt(document.getElementById('limitInput').value, 10);
+  dailyLimit = isNaN(val) ? 0 : val;
+  save();
+  renderSummary();
+}
+
+function renderSummary(){
+  const key = todayKey();
+  const entries = data[key] || [];
+  let molaMs = 0, isMs = 0;
+  entries.forEach(e=>{
+    if(e.type === 'mola') molaMs += (e.end - e.start);
+    else isMs += (e.end - e.start);
+  });
+  if(activeSession){
+    const liveMs = Date.now() - activeSession.start;
+    if(activeSession.type === 'mola') molaMs += liveMs; else isMs += liveMs;
+  }
+  document.getElementById('todayMolaTotal').textContent = fmtDuration(molaMs);
+  document.getElementById('todayIsTotal').textContent = fmtDuration(isMs);
+  document.getElementById('todayCount').textContent = entries.length + (activeSession ? 1 : 0);
+
+  const banner = document.getElementById('limitBanner');
+  const molaMin = molaMs / 60000;
+  if(dailyLimit > 0 && molaMin > dailyLimit){
+    banner.className = 'banner show';
+    banner.textContent = `⚠ Günlük mola limitini aştın: ${fmtDuration(molaMs)} / ${dailyLimit}dk`;
+  } else {
+    banner.className = 'banner';
+  }
+}
+
+function setRange(days){
+  chartRange = days;
+  document.getElementById('range7').className = days===7 ? 'on' : '';
+  document.getElementById('range30').className = days===30 ? 'on' : '';
+  drawChart();
+}
+
+function drawChart(){
+  const canvas = document.getElementById('chart');
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = canvas.parentElement.clientWidth - 40;
+  const cssHeight = 140;
+  canvas.width = cssWidth * dpr;
+  canvas.height = cssHeight * dpr;
+  canvas.style.width = cssWidth + 'px';
+  canvas.style.height = cssHeight + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0,0,cssWidth,cssHeight);
+
+  const days = [];
+  const now = new Date();
+  for(let i = chartRange - 1; i >= 0; i--){
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    days.push(todayKey(d));
+  }
+
+  const molaMins = [], isMins = [];
+  days.forEach(k=>{
+    const entries = data[k] || [];
+    let m=0, s=0;
+    entries.forEach(e=>{
+      const min = (e.end - e.start)/60000;
+      if(e.type==='mola') m+=min; else s+=min;
+    });
+    molaMins.push(m); isMins.push(s);
+  });
+
+  const maxVal = Math.max(10, ...days.map((_,i)=>molaMins[i]+isMins[i]));
+  const chartH = cssHeight - 24;
+  const barGap = chartRange === 30 ? 2 : 8;
+  const barW = (cssWidth / days.length) - barGap;
+
+  days.forEach((k, i)=>{
+    const x = i * (barW + barGap) + barGap/2;
+    const mH = (molaMins[i]/maxVal) * chartH;
+    const sH = (isMins[i]/maxVal) * chartH;
+    ctx.fillStyle = '#2f6f4f';
+    ctx.fillRect(x, chartH - mH, barW, mH);
+    ctx.fillStyle = '#2f5f8f';
+    ctx.fillRect(x, chartH - mH - sH, barW, sH);
+
+    if(chartRange === 7){
+      ctx.fillStyle = '#8a8a85';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      const d = new Date(k);
+      const label = d.toLocaleDateString('tr-TR', {weekday:'short'});
+      ctx.fillText(label, x + barW/2, cssHeight - 6);
+    }
+  });
+}
+
+function exportExcel(){
+  const rows = [['Tarih','Tür','Başlangıç','Bitiş','Süre (dakika)']];
+  Object.keys(data).sort().forEach(key=>{
+    data[key].slice().sort((a,b)=>a.start-b.start).forEach(e=>{
+      rows.push([
+        key,
+        TYPE_LABEL[e.type],
+        fmtTime(new Date(e.start)),
+        fmtTime(new Date(e.end)),
+        Math.round((e.end - e.start)/60000)
+      ]);
+    });
+  });
+  if(rows.length === 1){
+    alert('Dışa aktarılacak kayıt yok.');
+    return;
+  }
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:12},{wch:12},{wch:10},{wch:10},{wch:14}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Kayıtlar');
+  XLSX.writeFile(wb, 'mola_takip_' + todayKey() + '.xlsx');
+}
+
+function renderAll(){
+  updateButtonState();
+  populateDateSelect();
+  renderList();
+  renderSummary();
+  drawChart();
+}
+
+document.getElementById('limitInput').value = dailyLimit;
+if(activeSession){ startTick(); }
+renderAll();
+window.addEventListener('resize', drawChart);
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
