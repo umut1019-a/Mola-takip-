@@ -1,7 +1,7 @@
 {
-  "name": "Mola & Çıkış Takip",
+  "name": "Mola & Dış Ziyaret Takip",
   "short_name": "Mola Takip",
-  "description": "Mola ve iş çıkışı sürelerini takip et",
+  "description": "Mola ve dış ziyaret sürelerini takip et",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -21,9 +21,9 @@
       "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
-      "name": "İş İçin Çık",
-      "short_name": "İş Çıkışı",
-      "description": "İş çıkışını hemen başlat",
+      "name": "Dış Ziyaret",
+      "short_name": "Dış Ziyaret",
+      "description": "Dış ziyareti hemen başlat",
       "url": "./index.html?action=is",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }

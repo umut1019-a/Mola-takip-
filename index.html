@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mola & Çıkış Takip</title>
+<title>Mola & Dış Ziyaret Takip</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2f6f4f">
 <link rel="icon" href="icon-192.png">
@@ -130,6 +130,12 @@
     background:var(--input-bg);
     color:var(--ink);
     font-family:inherit;
+  }
+  .type-hint{
+    font-size:11px;
+    color:var(--muted);
+    margin-top:14px;
+    line-height:1.4;
   }
   button{
     border:none;
@@ -378,8 +384,8 @@
 <div class="wrap">
   <div class="top-row">
     <div>
-      <h1>Mola & Çıkış Takip</h1>
-      <div class="sub">Mola ya da iş için ofisten çıkışlarını ayrı ayrı kaydet</div>
+      <h1>Mola & Dış Ziyaret Takip</h1>
+      <div class="sub">Mola ve dış ziyaret sürelerini ayrı ayrı kaydet</div>
     </div>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
   </div>
@@ -391,8 +397,9 @@
     <div class="clock" id="clockDisplay">00:00:00</div>
     <div id="idleButtons" class="btn-row">
       <button class="btn-mola" onclick="startSession('mola')">Molaya Başla</button>
-      <button class="btn-is" onclick="startSession('is')">İş İçin Çık</button>
+      <button class="btn-is" onclick="startSession('is')">Dış Ziyaret</button>
     </div>
+    <div class="type-hint" id="typeHint">Dış Ziyaret: saha, firma ziyareti, rakip analizi gibi ofis dışı işler için</div>
     <div id="activeButtons" style="display:none;">
       <input type="text" class="note-input" id="noteInput" placeholder="Not ekle (opsiyonel)" oninput="updateNote()">
       <button class="btn-stop" onclick="stopSession()">Bitir</button>
@@ -412,7 +419,7 @@
     </div>
     <div class="stat is">
       <div class="num" id="periodIsTotal">0dk</div>
-      <div class="label">İş Çıkışı</div>
+      <div class="label">Dış Ziyaret</div>
     </div>
     <div class="stat">
       <div class="num" id="periodCount">0</div>
@@ -428,6 +435,10 @@
     <div class="settings-row">
       <span>Tek mola uyarı süresi (dakika)</span>
       <input type="number" id="alertInput" min="0" step="1" onchange="updateAlertMinutes()">
+    </div>
+    <div class="settings-row">
+      <span>Bildirim ile takip (Android)</span>
+      <input type="checkbox" id="notifToggle" onchange="toggleNotifSetting()" style="width:20px; height:20px;">
     </div>
   </div>
 
@@ -464,7 +475,7 @@
     <canvas id="chart" height="140"></canvas>
     <div class="legend">
       <span><i class="dot mola"></i>Mola</span>
-      <span><i class="dot is"></i>İş Çıkışı</span>
+      <span><i class="dot is"></i>Dış Ziyaret</span>
     </div>
   </div>
 
@@ -500,6 +511,8 @@ let activeSession = JSON.parse(localStorage.getItem(ACTIVE_KEY) || 'null');
 let dailyLimit = parseInt(localStorage.getItem(LIMIT_KEY) || '60', 10);
 let sessionAlertMinutes = parseInt(localStorage.getItem(ALERT_KEY) || '15', 10);
 let theme = localStorage.getItem(THEME_KEY) || 'light';
+let notifEnabled = localStorage.getItem('mola_takip_notif_v2') === '1';
+let notifInterval = null;
 let chartRange = 7;
 let currentPeriod = 'today';
 let tickInterval = null;
@@ -507,7 +520,7 @@ let hasAlerted = false;
 let lastAlertTime = 0;
 let audioCtx = null;
 
-const TYPE_LABEL = {mola: 'Mola', is: 'İş Çıkışı'};
+const TYPE_LABEL = {mola: 'Mola', is: 'Dış Ziyaret'};
 const WEEKDAY_LABELS = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
 
 function todayKey(d = new Date()){
@@ -575,6 +588,43 @@ function playBeep(){
   });
 }
 
+function toggleNotifSetting(){
+  notifEnabled = document.getElementById('notifToggle').checked;
+  localStorage.setItem('mola_takip_notif_v2', notifEnabled ? '1' : '0');
+  if(notifEnabled && 'Notification' in window && Notification.permission === 'default'){
+    Notification.requestPermission();
+  }
+}
+
+function showLiveNotification(){
+  if(!notifEnabled || !activeSession) return;
+  if(!('serviceWorker' in navigator) || !('Notification' in window)) return;
+  if(Notification.permission !== 'granted') return;
+  const elapsedMin = Math.floor((Date.now() - activeSession.start) / 60000);
+  const label = TYPE_LABEL[activeSession.type];
+  navigator.serviceWorker.ready.then(reg=>{
+    reg.showNotification(label + ' devam ediyor', {
+      body: 'Süre: ' + elapsedMin + ' dakika' + (activeSession.note ? ' · ' + activeSession.note : ''),
+      tag: 'mola-timer',
+      renotify: false,
+      silent: true,
+      requireInteraction: true,
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
+      actions: [{ action: 'stop', title: 'Bitir' }]
+    });
+  }).catch(()=>{});
+}
+
+function closeLiveNotification(){
+  if(!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then(reg=>{
+    reg.getNotifications({tag:'mola-timer'}).then(list=>{
+      list.forEach(n=>n.close());
+    });
+  }).catch(()=>{});
+}
+
 function startSession(type){
   if(activeSession) return;
   ensureAudio();
@@ -585,6 +635,10 @@ function startSession(type){
   startTick();
   save();
   renderAll();
+  showLiveNotification();
+  if(notifEnabled){
+    notifInterval = setInterval(showLiveNotification, 60000);
+  }
 }
 
 function updateNote(){
@@ -602,6 +656,8 @@ function stopSession(){
   activeSession = null;
   hasAlerted = false;
   stopTick();
+  if(notifInterval){ clearInterval(notifInterval); notifInterval = null; }
+  closeLiveNotification();
   document.getElementById('timerCard').classList.remove('alerting');
   save();
   renderAll();
@@ -649,14 +705,16 @@ function updateButtonState(){
   if(activeSession){
     idle.style.display = 'none';
     active.style.display = 'block';
+    document.getElementById('typeHint').style.display = 'none';
     document.getElementById('noteInput').value = activeSession.note || '';
     status.textContent = TYPE_LABEL[activeSession.type].toUpperCase() + ' DEVAM EDİYOR';
     status.className = 'status active-' + activeSession.type;
-    stopBtn.textContent = (activeSession.type === 'mola' ? 'Molayı Bitir' : 'İş Çıkışını Bitir');
+    stopBtn.textContent = (activeSession.type === 'mola' ? 'Molayı Bitir' : 'Dış Ziyareti Bitir');
     checkAlert();
   } else {
     idle.style.display = 'flex';
     active.style.display = 'none';
+    document.getElementById('typeHint').style.display = 'block';
     status.textContent = 'AKTİF DEĞİL';
     status.className = 'status';
     document.getElementById('timerCard').classList.remove('alerting');
@@ -890,10 +948,19 @@ function drawChart(){
 
   const days = [];
   const now = new Date();
-  for(let i = chartRange - 1; i >= 0; i--){
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    days.push(todayKey(d));
+  if(chartRange === 7){
+    const monday = getWeekStart(now);
+    for(let i = 0; i < 7; i++){
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      days.push(todayKey(d));
+    }
+  } else {
+    for(let i = chartRange - 1; i >= 0; i--){
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      days.push(todayKey(d));
+    }
   }
 
   const molaMins = [], isMins = [];
@@ -1018,9 +1085,31 @@ function renderAll(){
 applyTheme();
 document.getElementById('limitInput').value = dailyLimit;
 document.getElementById('alertInput').value = sessionAlertMinutes;
-if(activeSession){ startTick(); }
+document.getElementById('notifToggle').checked = notifEnabled;
+if(activeSession){
+  startTick();
+  if(notifEnabled){ notifInterval = setInterval(showLiveNotification, 60000); }
+}
 renderAll();
 window.addEventListener('resize', drawChart);
+
+// Bildirimdeki "Bitir" aksiyonundan gelen komut
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', (event)=>{
+    if(event.data && event.data.type === 'stop-session'){
+      stopSession();
+    }
+  });
+}
+
+// Bildirime dokunup uygulama kapalıyken açıldıysa
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('stop') === '1' && activeSession){
+    stopSession();
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+})();
 
 // Kısayoldan (widget benzeri) gelen otomatik başlatma
 (function(){
