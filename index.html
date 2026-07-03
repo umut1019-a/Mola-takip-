@@ -602,6 +602,16 @@ if(activeSession){ startTick(); }
 renderAll();
 window.addEventListener('resize', drawChart);
 
+// Kısayoldan (widget benzeri) gelen otomatik başlatma
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  const action = params.get('action');
+  if((action === 'mola' || action === 'is') && !activeSession){
+    startSession(action);
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+})();
+
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('service-worker.js').catch(()=>{});

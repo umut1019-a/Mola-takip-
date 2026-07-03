@@ -11,5 +11,21 @@
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Molaya Başla",
+      "short_name": "Mola",
+      "description": "Molayı hemen başlat",
+      "url": "./index.html?action=mola",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "İş İçin Çık",
+      "short_name": "İş Çıkışı",
+      "description": "İş çıkışını hemen başlat",
+      "url": "./index.html?action=is",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
   ]
 }
