@@ -22,6 +22,21 @@
     --is-soft:#e6eef6;
     --danger:#b5482f;
     --danger-soft:#fbe9e4;
+    --input-bg:#fafaf9;
+  }
+  [data-theme="dark"]{
+    --bg:#15140f;
+    --card:#201f1a;
+    --ink:#f2f1ec;
+    --muted:#928f85;
+    --line:#332f27;
+    --mola:#5fae83;
+    --mola-soft:#1e2e26;
+    --is:#6fa3d8;
+    --is-soft:#1c2733;
+    --danger:#e08063;
+    --danger-soft:#3a241d;
+    --input-bg:#15140f;
   }
   *{box-sizing:border-box;}
   body{
@@ -33,8 +48,15 @@
     justify-content:center;
     padding:32px 16px 60px;
     min-height:100vh;
+    transition:background .2s ease, color .2s ease;
   }
   .wrap{width:100%; max-width:520px;}
+  .top-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:4px;
+  }
   h1{
     font-size:20px;
     font-weight:600;
@@ -42,6 +64,19 @@
     letter-spacing:-0.2px;
   }
   .sub{color:var(--muted); font-size:13px; margin-bottom:24px;}
+  .theme-btn{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    width:38px;
+    height:38px;
+    font-size:16px;
+    padding:0;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
 
   .banner{
     background:var(--danger-soft);
@@ -64,6 +99,10 @@
     padding:32px 24px;
     text-align:center;
     margin-bottom:20px;
+    transition:box-shadow .2s ease;
+  }
+  .timer-card.alerting{
+    box-shadow:0 0 0 3px var(--danger);
   }
   .status{
     font-size:12px;
@@ -78,8 +117,19 @@
     font-size:44px;
     font-weight:300;
     font-variant-numeric:tabular-nums;
-    margin-bottom:24px;
+    margin-bottom:20px;
     letter-spacing:1px;
+  }
+  .note-input{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:13px;
+    margin-bottom:16px;
+    background:var(--input-bg);
+    color:var(--ink);
+    font-family:inherit;
   }
   button{
     border:none;
@@ -89,12 +139,33 @@
     font-weight:600;
     cursor:pointer;
     transition:opacity .15s ease, transform .1s ease;
+    font-family:inherit;
   }
   button:active{transform:scale(0.97);}
   .btn-row{display:flex; gap:10px; justify-content:center;}
   .btn-mola{background:var(--mola); color:#fff;}
   .btn-is{background:var(--is); color:#fff;}
   .btn-stop{background:var(--danger); color:#fff; width:100%; padding:14px 32px;}
+
+  .tabs{
+    display:flex;
+    gap:6px;
+    margin-bottom:10px;
+  }
+  .tabs button{
+    flex:1;
+    background:var(--card);
+    border:1px solid var(--line);
+    color:var(--muted);
+    padding:9px;
+    font-size:12px;
+    border-radius:10px;
+  }
+  .tabs button.on{
+    background:var(--ink);
+    color:var(--bg);
+    border-color:var(--ink);
+  }
 
   .summary{
     display:flex;
@@ -120,19 +191,46 @@
     border-radius:14px;
     padding:14px 16px;
     margin-bottom:16px;
+  }
+  .settings-row{
     display:flex;
     align-items:center;
     justify-content:space-between;
     font-size:13px;
+    padding:6px 0;
   }
-  .settings-card input{
+  .settings-row + .settings-row{border-top:1px solid var(--line);}
+  .settings-row input{
     width:60px;
     border:1px solid var(--line);
     border-radius:8px;
     padding:6px 8px;
     font-size:13px;
     text-align:center;
+    background:var(--input-bg);
+    color:var(--ink);
   }
+
+  .stats-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px 20px;
+    margin-bottom:16px;
+  }
+  .stats-card h3{
+    font-size:13px;
+    font-weight:600;
+    color:var(--muted);
+    margin:0 0 12px;
+  }
+  .stats-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+  .stats-grid .item .num{font-size:17px; font-weight:600;}
+  .stats-grid .item .label{font-size:11px; color:var(--muted); margin-top:2px;}
 
   .chart-card{
     background:var(--card);
@@ -160,7 +258,7 @@
   }
   .chart-header .toggles button.on{
     background:var(--ink);
-    color:#fff;
+    color:var(--bg);
     border-color:var(--ink);
   }
   .legend{display:flex; gap:14px; font-size:11px; color:var(--muted); margin-top:8px;}
@@ -192,16 +290,19 @@
     border-radius:8px;
     padding:5px 8px;
     font-size:12px;
-    background:var(--bg);
+    background:var(--input-bg);
     color:var(--ink);
   }
   .entry{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
     padding:12px 20px;
     border-top:1px solid var(--line);
     font-size:14px;
+    cursor:pointer;
+  }
+  .entry-main{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
   }
   .tag{
     font-size:10px;
@@ -230,19 +331,40 @@
   }
   .entry .del:hover{color:var(--danger);}
   .row-right{display:flex; align-items:center;}
+  .entry-note{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:6px;
+    padding-left:2px;
+    font-style:italic;
+  }
   .empty{
     padding:28px 20px;
     text-align:center;
     color:var(--muted);
     font-size:13px;
   }
+  .action-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:10px;
+  }
   .export-btn{
-    width:100%;
+    flex:1;
     background:var(--ink);
-    color:#fff;
+    color:var(--bg);
     padding:13px;
     border-radius:12px;
-    font-size:14px;
+    font-size:13px;
+  }
+  .backup-btn{
+    flex:1;
+    background:var(--card);
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:13px;
+    border-radius:12px;
+    font-size:13px;
   }
   .footer-note{
     text-align:center;
@@ -254,12 +376,17 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Mola & Çıkış Takip</h1>
-  <div class="sub">Mola ya da iş için ofisten çıkışlarını ayrı ayrı kaydet</div>
+  <div class="top-row">
+    <div>
+      <h1>Mola & Çıkış Takip</h1>
+      <div class="sub">Mola ya da iş için ofisten çıkışlarını ayrı ayrı kaydet</div>
+    </div>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+  </div>
 
   <div class="banner" id="limitBanner"></div>
 
-  <div class="timer-card">
+  <div class="timer-card" id="timerCard">
     <div class="status" id="statusText">AKTİF DEĞİL</div>
     <div class="clock" id="clockDisplay">00:00:00</div>
     <div id="idleButtons" class="btn-row">
@@ -267,28 +394,63 @@
       <button class="btn-is" onclick="startSession('is')">İş İçin Çık</button>
     </div>
     <div id="activeButtons" style="display:none;">
+      <input type="text" class="note-input" id="noteInput" placeholder="Not ekle (opsiyonel)" oninput="updateNote()">
       <button class="btn-stop" onclick="stopSession()">Bitir</button>
     </div>
   </div>
 
+  <div class="tabs">
+    <button id="tabToday" class="on" onclick="setPeriod('today')">Bugün</button>
+    <button id="tabWeek" onclick="setPeriod('week')">Bu Hafta</button>
+    <button id="tabMonth" onclick="setPeriod('month')">Bu Ay</button>
+  </div>
+
   <div class="summary">
     <div class="stat mola">
-      <div class="num" id="todayMolaTotal">0dk</div>
-      <div class="label">Bugün Mola</div>
+      <div class="num" id="periodMolaTotal">0dk</div>
+      <div class="label">Mola</div>
     </div>
     <div class="stat is">
-      <div class="num" id="todayIsTotal">0dk</div>
-      <div class="label">Bugün İş Çıkışı</div>
+      <div class="num" id="periodIsTotal">0dk</div>
+      <div class="label">İş Çıkışı</div>
     </div>
     <div class="stat">
-      <div class="num" id="todayCount">0</div>
-      <div class="label">Toplam Kayıt</div>
+      <div class="num" id="periodCount">0</div>
+      <div class="label">Kayıt</div>
     </div>
   </div>
 
   <div class="settings-card">
-    <span>Günlük mola limiti (dakika)</span>
-    <input type="number" id="limitInput" min="0" step="5" onchange="updateLimit()">
+    <div class="settings-row">
+      <span>Günlük mola limiti (dakika)</span>
+      <input type="number" id="limitInput" min="0" step="5" onchange="updateLimit()">
+    </div>
+    <div class="settings-row">
+      <span>Tek mola uyarı süresi (dakika)</span>
+      <input type="number" id="alertInput" min="0" step="1" onchange="updateAlertMinutes()">
+    </div>
+  </div>
+
+  <div class="stats-card">
+    <h3>İstatistikler (tüm zamanlar)</h3>
+    <div class="stats-grid">
+      <div class="item">
+        <div class="num" id="statAvg">–</div>
+        <div class="label">Ortalama mola süresi</div>
+      </div>
+      <div class="item">
+        <div class="num" id="statMax">–</div>
+        <div class="label">En uzun mola</div>
+      </div>
+      <div class="item">
+        <div class="num" id="statBusyDay">–</div>
+        <div class="label">En yoğun gün</div>
+      </div>
+      <div class="item">
+        <div class="num" id="statTotalCount">0</div>
+        <div class="label">Toplam kayıt</div>
+      </div>
+    </div>
   </div>
 
   <div class="chart-card">
@@ -314,7 +476,14 @@
     <div id="entryList"></div>
   </div>
 
-  <button class="export-btn" onclick="exportExcel()">Excel'e Aktar (.xlsx)</button>
+  <div class="action-row">
+    <button class="export-btn" onclick="exportExcel()">Excel'e Aktar</button>
+    <button class="backup-btn" onclick="exportBackup()">Yedekle</button>
+  </div>
+  <div class="action-row">
+    <button class="backup-btn" style="flex:1;" onclick="document.getElementById('restoreFile').click()">Geri Yükle</button>
+  </div>
+  <input type="file" id="restoreFile" accept="application/json" style="display:none;" onchange="importBackup(event)">
 
   <div class="footer-note">Veriler bu tarayıcıda saklanır (localStorage)</div>
 </div>
@@ -323,14 +492,21 @@
 const STORAGE_KEY = 'mola_takip_data_v2';
 const ACTIVE_KEY = 'mola_takip_active_v2';
 const LIMIT_KEY = 'mola_takip_limit_v2';
+const ALERT_KEY = 'mola_takip_alertmin_v2';
+const THEME_KEY = 'mola_takip_theme_v2';
 
 let data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
 let activeSession = JSON.parse(localStorage.getItem(ACTIVE_KEY) || 'null');
 let dailyLimit = parseInt(localStorage.getItem(LIMIT_KEY) || '60', 10);
+let sessionAlertMinutes = parseInt(localStorage.getItem(ALERT_KEY) || '15', 10);
+let theme = localStorage.getItem(THEME_KEY) || 'light';
 let chartRange = 7;
+let currentPeriod = 'today';
 let tickInterval = null;
+let hasAlerted = false;
 
 const TYPE_LABEL = {mola: 'Mola', is: 'İş Çıkışı'};
+const WEEKDAY_LABELS = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
 
 function todayKey(d = new Date()){
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -353,14 +529,35 @@ function save(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   localStorage.setItem(ACTIVE_KEY, JSON.stringify(activeSession));
   localStorage.setItem(LIMIT_KEY, String(dailyLimit));
+  localStorage.setItem(ALERT_KEY, String(sessionAlertMinutes));
+  localStorage.setItem(THEME_KEY, theme);
+}
+
+function applyTheme(){
+  document.body.setAttribute('data-theme', theme);
+  document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+function toggleTheme(){
+  theme = theme === 'dark' ? 'light' : 'dark';
+  applyTheme();
+  save();
+  drawChart();
 }
 
 function startSession(type){
   if(activeSession) return;
-  activeSession = {start: Date.now(), type};
+  activeSession = {start: Date.now(), type, note: ''};
+  hasAlerted = false;
+  document.getElementById('noteInput').value = '';
   startTick();
   save();
   renderAll();
+}
+
+function updateNote(){
+  if(!activeSession) return;
+  activeSession.note = document.getElementById('noteInput').value;
+  save();
 }
 
 function stopSession(){
@@ -368,16 +565,18 @@ function stopSession(){
   const end = Date.now();
   const key = todayKey(new Date(activeSession.start));
   if(!data[key]) data[key] = [];
-  data[key].push({start: activeSession.start, end, type: activeSession.type});
+  data[key].push({start: activeSession.start, end, type: activeSession.type, note: activeSession.note || ''});
   activeSession = null;
+  hasAlerted = false;
   stopTick();
+  document.getElementById('timerCard').classList.remove('alerting');
   save();
   renderAll();
 }
 
 function startTick(){
   updateClock();
-  tickInterval = setInterval(()=>{ updateClock(); renderSummary(); }, 1000);
+  tickInterval = setInterval(()=>{ updateClock(); renderPeriodSummary(); checkAlert(); }, 1000);
 }
 function stopTick(){
   clearInterval(tickInterval);
@@ -389,6 +588,18 @@ function updateClock(){
   const elapsed = Date.now() - activeSession.start;
   document.getElementById('clockDisplay').textContent = fmtDuration(elapsed, true);
 }
+function checkAlert(){
+  if(!activeSession || sessionAlertMinutes <= 0) return;
+  const elapsedMin = (Date.now() - activeSession.start) / 60000;
+  const card = document.getElementById('timerCard');
+  if(elapsedMin >= sessionAlertMinutes){
+    card.classList.add('alerting');
+    if(!hasAlerted){
+      hasAlerted = true;
+      if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
+    }
+  }
+}
 
 function updateButtonState(){
   const idle = document.getElementById('idleButtons');
@@ -398,15 +609,17 @@ function updateButtonState(){
   if(activeSession){
     idle.style.display = 'none';
     active.style.display = 'block';
+    document.getElementById('noteInput').value = activeSession.note || '';
     status.textContent = TYPE_LABEL[activeSession.type].toUpperCase() + ' DEVAM EDİYOR';
     status.className = 'status active-' + activeSession.type;
-    stopBtn.textContent = TYPE_LABEL[activeSession.type] + 'yı Bitir'.replace('İş Çıkışıyı','İş Çıkışını');
     stopBtn.textContent = (activeSession.type === 'mola' ? 'Molayı Bitir' : 'İş Çıkışını Bitir');
+    checkAlert();
   } else {
     idle.style.display = 'flex';
     active.style.display = 'none';
     status.textContent = 'AKTİF DEĞİL';
     status.className = 'status';
+    document.getElementById('timerCard').classList.remove('alerting');
   }
 }
 
@@ -440,28 +653,54 @@ function renderList(){
     const div = document.createElement('div');
     div.className = 'entry';
     const dur = e.end - e.start;
+    const noteHtml = e.note ? `<div class="entry-note">${escapeHtml(e.note)}</div>` : '';
     div.innerHTML = `
-      <div class="times">
-        <span class="tag ${e.type}">${TYPE_LABEL[e.type]}</span>
-        ${fmtTime(new Date(e.start))}<span class="arrow">→</span>${fmtTime(new Date(e.end))}
+      <div class="entry-main" onclick="editNote('${key}', ${entries.length-1-idx})">
+        <div class="times">
+          <span class="tag ${e.type}">${TYPE_LABEL[e.type]}</span>
+          ${fmtTime(new Date(e.start))}<span class="arrow">→</span>${fmtTime(new Date(e.end))}
+        </div>
+        <div class="row-right">
+          <span class="dur ${e.type}">${fmtDuration(dur)}</span>
+          <button class="del" onclick="event.stopPropagation(); deleteEntry('${key}', ${entries.length-1-idx})">✕</button>
+        </div>
       </div>
-      <div class="row-right">
-        <span class="dur ${e.type}">${fmtDuration(dur)}</span>
-        <button class="del" onclick="deleteEntry('${key}', ${entries.length-1-idx})">✕</button>
-      </div>
+      ${noteHtml}
     `;
     list.appendChild(div);
   });
 }
 
-function deleteEntry(key, originalIdx){
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function findEntryByOriginalIdx(key, originalIdx){
   const original = data[key];
   const sorted = original.slice().sort((a,b)=>b.start-a.start);
   const target = sorted[sorted.length - 1 - originalIdx];
   const realIdx = original.findIndex(e=>e.start===target.start && e.end===target.end);
+  return realIdx;
+}
+
+function editNote(key, originalIdx){
+  const realIdx = findEntryByOriginalIdx(key, originalIdx);
+  if(realIdx === -1) return;
+  const entry = data[key][realIdx];
+  const newNote = prompt('Not:', entry.note || '');
+  if(newNote === null) return;
+  entry.note = newNote;
+  save();
+  renderList();
+}
+
+function deleteEntry(key, originalIdx){
+  const realIdx = findEntryByOriginalIdx(key, originalIdx);
   if(realIdx > -1){
-    original.splice(realIdx,1);
-    if(original.length === 0) delete data[key];
+    data[key].splice(realIdx,1);
+    if(data[key].length === 0) delete data[key];
     save();
     populateDateSelect();
     renderAll();
@@ -472,33 +711,120 @@ function updateLimit(){
   const val = parseInt(document.getElementById('limitInput').value, 10);
   dailyLimit = isNaN(val) ? 0 : val;
   save();
-  renderSummary();
+  renderPeriodSummary();
+}
+function updateAlertMinutes(){
+  const val = parseInt(document.getElementById('alertInput').value, 10);
+  sessionAlertMinutes = isNaN(val) ? 0 : val;
+  hasAlerted = false;
+  save();
 }
 
-function renderSummary(){
-  const key = todayKey();
-  const entries = data[key] || [];
-  let molaMs = 0, isMs = 0;
-  entries.forEach(e=>{
-    if(e.type === 'mola') molaMs += (e.end - e.start);
-    else isMs += (e.end - e.start);
+function getWeekStart(d){
+  const day = (d.getDay() + 6) % 7; // Monday = 0
+  const start = new Date(d);
+  start.setDate(d.getDate() - day);
+  start.setHours(0,0,0,0);
+  return start;
+}
+function getMonthStart(d){
+  return new Date(d.getFullYear(), d.getMonth(), 1, 0,0,0,0);
+}
+
+function sumRange(startDate){
+  const now = new Date();
+  let molaMs=0, isMs=0, count=0;
+  Object.keys(data).forEach(key=>{
+    const kd = new Date(key + 'T00:00:00');
+    if(kd >= startDate && kd <= now){
+      data[key].forEach(e=>{
+        if(e.type==='mola') molaMs += (e.end-e.start); else isMs += (e.end-e.start);
+        count++;
+      });
+    }
   });
+  return {molaMs, isMs, count};
+}
+
+function setPeriod(period){
+  currentPeriod = period;
+  document.getElementById('tabToday').className = period==='today' ? 'on' : '';
+  document.getElementById('tabWeek').className = period==='week' ? 'on' : '';
+  document.getElementById('tabMonth').className = period==='month' ? 'on' : '';
+  renderPeriodSummary();
+}
+
+function renderPeriodSummary(){
+  let molaMs=0, isMs=0, count=0;
+  const now = new Date();
+  if(currentPeriod === 'today'){
+    const key = todayKey();
+    const entries = data[key] || [];
+    entries.forEach(e=>{
+      if(e.type==='mola') molaMs += (e.end-e.start); else isMs += (e.end-e.start);
+    });
+    count = entries.length;
+  } else if(currentPeriod === 'week'){
+    const r = sumRange(getWeekStart(now));
+    molaMs = r.molaMs; isMs = r.isMs; count = r.count;
+  } else {
+    const r = sumRange(getMonthStart(now));
+    molaMs = r.molaMs; isMs = r.isMs; count = r.count;
+  }
   if(activeSession){
     const liveMs = Date.now() - activeSession.start;
     if(activeSession.type === 'mola') molaMs += liveMs; else isMs += liveMs;
+    count += 1;
   }
-  document.getElementById('todayMolaTotal').textContent = fmtDuration(molaMs);
-  document.getElementById('todayIsTotal').textContent = fmtDuration(isMs);
-  document.getElementById('todayCount').textContent = entries.length + (activeSession ? 1 : 0);
+  document.getElementById('periodMolaTotal').textContent = fmtDuration(molaMs);
+  document.getElementById('periodIsTotal').textContent = fmtDuration(isMs);
+  document.getElementById('periodCount').textContent = count;
 
+  // Günlük limit uyarısı her zaman bugüne göre
+  const todayEntries = data[todayKey()] || [];
+  let todayMolaMs = todayEntries.filter(e=>e.type==='mola').reduce((s,e)=>s+(e.end-e.start),0);
+  if(activeSession && activeSession.type === 'mola'){
+    todayMolaMs += (Date.now() - activeSession.start);
+  }
   const banner = document.getElementById('limitBanner');
-  const molaMin = molaMs / 60000;
+  const molaMin = todayMolaMs / 60000;
   if(dailyLimit > 0 && molaMin > dailyLimit){
     banner.className = 'banner show';
-    banner.textContent = `⚠ Günlük mola limitini aştın: ${fmtDuration(molaMs)} / ${dailyLimit}dk`;
+    banner.textContent = `⚠ Günlük mola limitini aştın: ${fmtDuration(todayMolaMs)} / ${dailyLimit}dk`;
   } else {
     banner.className = 'banner';
   }
+}
+
+function renderAllTimeStats(){
+  let allEntries = [];
+  Object.keys(data).forEach(key=>{
+    data[key].forEach(e=> allEntries.push(e));
+  });
+  const molaEntries = allEntries.filter(e=>e.type==='mola');
+  document.getElementById('statTotalCount').textContent = allEntries.length;
+
+  if(molaEntries.length === 0){
+    document.getElementById('statAvg').textContent = '–';
+    document.getElementById('statMax').textContent = '–';
+    document.getElementById('statBusyDay').textContent = '–';
+    return;
+  }
+
+  const durations = molaEntries.map(e=>e.end-e.start);
+  const avgMs = durations.reduce((a,b)=>a+b,0) / durations.length;
+  const maxMs = Math.max(...durations);
+  document.getElementById('statAvg').textContent = fmtDuration(avgMs);
+  document.getElementById('statMax').textContent = fmtDuration(maxMs);
+
+  const dayTotals = [0,0,0,0,0,0,0];
+  molaEntries.forEach(e=>{
+    const wd = new Date(e.start).getDay();
+    dayTotals[wd] += (e.end-e.start);
+  });
+  let maxDay = 0;
+  for(let i=1;i<7;i++){ if(dayTotals[i] > dayTotals[maxDay]) maxDay = i; }
+  document.getElementById('statBusyDay').textContent = dayTotals[maxDay] > 0 ? WEEKDAY_LABELS[maxDay] : '–';
 }
 
 function setRange(days){
@@ -544,18 +870,21 @@ function drawChart(){
   const chartH = cssHeight - 24;
   const barGap = chartRange === 30 ? 2 : 8;
   const barW = (cssWidth / days.length) - barGap;
+  const molaColor = getComputedStyle(document.body).getPropertyValue('--mola').trim() || '#2f6f4f';
+  const isColor = getComputedStyle(document.body).getPropertyValue('--is').trim() || '#2f5f8f';
+  const mutedColor = getComputedStyle(document.body).getPropertyValue('--muted').trim() || '#8a8a85';
 
   days.forEach((k, i)=>{
     const x = i * (barW + barGap) + barGap/2;
     const mH = (molaMins[i]/maxVal) * chartH;
     const sH = (isMins[i]/maxVal) * chartH;
-    ctx.fillStyle = '#2f6f4f';
+    ctx.fillStyle = molaColor;
     ctx.fillRect(x, chartH - mH, barW, mH);
-    ctx.fillStyle = '#2f5f8f';
+    ctx.fillStyle = isColor;
     ctx.fillRect(x, chartH - mH - sH, barW, sH);
 
     if(chartRange === 7){
-      ctx.fillStyle = '#8a8a85';
+      ctx.fillStyle = mutedColor;
       ctx.font = '10px sans-serif';
       ctx.textAlign = 'center';
       const d = new Date(k);
@@ -566,7 +895,7 @@ function drawChart(){
 }
 
 function exportExcel(){
-  const rows = [['Tarih','Tür','Başlangıç','Bitiş','Süre (dakika)']];
+  const rows = [['Tarih','Tür','Başlangıç','Bitiş','Süre (dakika)','Not']];
   Object.keys(data).sort().forEach(key=>{
     data[key].slice().sort((a,b)=>a.start-b.start).forEach(e=>{
       rows.push([
@@ -574,7 +903,8 @@ function exportExcel(){
         TYPE_LABEL[e.type],
         fmtTime(new Date(e.start)),
         fmtTime(new Date(e.end)),
-        Math.round((e.end - e.start)/60000)
+        Math.round((e.end - e.start)/60000),
+        e.note || ''
       ]);
     });
   });
@@ -583,21 +913,70 @@ function exportExcel(){
     return;
   }
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:12},{wch:12},{wch:10},{wch:10},{wch:14}];
+  ws['!cols'] = [{wch:12},{wch:12},{wch:10},{wch:10},{wch:14},{wch:24}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Kayıtlar');
   XLSX.writeFile(wb, 'mola_takip_' + todayKey() + '.xlsx');
+}
+
+function exportBackup(){
+  const backup = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    data, dailyLimit, sessionAlertMinutes, theme
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mola_takip_yedek_' + todayKey() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importBackup(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const parsed = JSON.parse(e.target.result);
+      if(!parsed.data) throw new Error('Geçersiz yedek dosyası');
+      const ok = confirm('Mevcut veriler yedekteki verilerle değiştirilecek. Devam edilsin mi?');
+      if(!ok) return;
+      data = parsed.data || {};
+      if(typeof parsed.dailyLimit === 'number') dailyLimit = parsed.dailyLimit;
+      if(typeof parsed.sessionAlertMinutes === 'number') sessionAlertMinutes = parsed.sessionAlertMinutes;
+      if(parsed.theme) theme = parsed.theme;
+      save();
+      document.getElementById('limitInput').value = dailyLimit;
+      document.getElementById('alertInput').value = sessionAlertMinutes;
+      applyTheme();
+      populateDateSelect();
+      renderAll();
+      alert('Geri yükleme tamamlandı.');
+    } catch(err){
+      alert('Dosya okunamadı: geçerli bir yedek dosyası değil.');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
 }
 
 function renderAll(){
   updateButtonState();
   populateDateSelect();
   renderList();
-  renderSummary();
+  renderPeriodSummary();
+  renderAllTimeStats();
   drawChart();
 }
 
+applyTheme();
 document.getElementById('limitInput').value = dailyLimit;
+document.getElementById('alertInput').value = sessionAlertMinutes;
 if(activeSession){ startTick(); }
 renderAll();
 window.addEventListener('resize', drawChart);
