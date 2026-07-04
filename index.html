@@ -112,12 +112,20 @@
   }
   .status.active-mola{color:var(--mola);}
   .status.active-is{color:var(--is);}
+  #idleButtons, #activeButtons{
+    animation: fadeIn 0.25s ease;
+  }
+  @keyframes fadeIn{
+    from{ opacity:0; transform:translateY(4px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
   .clock{
     font-size:44px;
     font-weight:300;
     font-variant-numeric:tabular-nums;
     margin-bottom:20px;
     letter-spacing:1px;
+    transition:color 0.2s ease;
   }
   .note-input{
     width:100%;
@@ -146,7 +154,7 @@
     transition:opacity .15s ease, transform .1s ease;
     font-family:inherit;
   }
-  button:active{transform:scale(0.97);}
+  button:active{transform:scale(0.97); filter:brightness(0.92);}
   .btn-row{display:flex; gap:10px; justify-content:center;}
   .btn-mola{background:var(--mola); color:#fff;}
   .btn-is{background:var(--is); color:#fff;}
@@ -196,6 +204,22 @@
     border-radius:14px;
     padding:14px 16px;
     margin-bottom:16px;
+  }
+  .collapsible-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    cursor:pointer;
+    font-size:13px;
+    font-weight:600;
+    color:var(--muted);
+  }
+  .collapsible-header .chevron{
+    font-size:11px;
+    transition:transform 0.2s ease;
+  }
+  .collapsible-body{
+    margin-top:10px;
   }
   .settings-row{
     display:flex;
@@ -300,9 +324,29 @@
   }
   .entry{
     padding:12px 20px;
-    border-top:1px solid var(--line);
     font-size:14px;
     cursor:pointer;
+    position:relative;
+    background:var(--card);
+    transition:transform 0.25s ease;
+    touch-action:pan-y;
+  }
+  .entry-swipe-wrap{
+    position:relative;
+    overflow:hidden;
+    border-top:1px solid var(--line);
+  }
+  .entry-delete-bg{
+    position:absolute;
+    inset:0;
+    background:var(--danger);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    padding-right:24px;
+    font-size:13px;
+    font-weight:600;
   }
   .entry-main{
     display:flex;
@@ -348,6 +392,9 @@
     text-align:center;
     color:var(--muted);
     font-size:13px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
   }
   .action-row{
     display:flex;
@@ -501,9 +548,47 @@
     color:var(--muted);
     margin-top:5px;
   }
+
+  .mini-timer-bar{
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 18px;
+    color:#fff;
+    font-size:13px;
+    font-weight:600;
+    z-index:900;
+    transform:translateY(-100%);
+    transition:transform 0.25s ease;
+    box-shadow:0 4px 16px rgba(0,0,0,0.15);
+  }
+  .mini-timer-bar.show{transform:translateY(0);}
+  .mini-timer-bar.mola{background:var(--mola);}
+  .mini-timer-bar.is{background:var(--is);}
+  .mini-timer-bar .mtb-left{display:flex; align-items:center; gap:10px;}
+  .mini-timer-bar .mtb-clock{font-variant-numeric:tabular-nums; opacity:0.95;}
+  .mini-timer-bar button{
+    background:rgba(255,255,255,0.22);
+    color:#fff;
+    padding:7px 14px;
+    font-size:12px;
+    border-radius:8px;
+  }
 </style>
 </head>
 <body>
+<div class="mini-timer-bar" id="miniTimerBar">
+  <div class="mtb-left">
+    <span id="miniTimerLabel">Mola</span>
+    <span class="mtb-clock" id="miniTimerClock">00:00:00</span>
+  </div>
+  <button onclick="stopSession()">Bitir</button>
+</div>
+
 <div class="wrap">
   <div class="top-row">
     <div>
@@ -558,34 +643,45 @@
   </div>
 
   <div class="settings-card">
-    <div class="settings-row">
-      <span>Günlük mola limiti (dakika)</span>
-      <input type="number" id="limitInput" min="0" step="5" onchange="updateLimit()">
+    <div class="collapsible-header" onclick="toggleCollapse('settingsBody', this)">
+      <span>Ayarlar</span>
+      <span class="chevron">▾</span>
     </div>
-    <div class="settings-row">
-      <span>Tek mola uyarı süresi (dakika)</span>
-      <input type="number" id="alertInput" min="0" step="1" onchange="updateAlertMinutes()">
+    <div class="collapsible-body" id="settingsBody" style="display:none;">
+      <div class="settings-row">
+        <span>Günlük mola limiti (dakika)</span>
+        <input type="number" id="limitInput" min="0" step="5" onchange="updateLimit()">
+      </div>
+      <div class="settings-row">
+        <span>Tek mola uyarı süresi (dakika)</span>
+        <input type="number" id="alertInput" min="0" step="1" onchange="updateAlertMinutes()">
+      </div>
     </div>
   </div>
 
   <div class="stats-card">
-    <h3>İstatistikler (tüm zamanlar)</h3>
-    <div class="stats-grid">
-      <div class="item">
-        <div class="num" id="statAvg">–</div>
-        <div class="label">Ortalama mola süresi</div>
-      </div>
-      <div class="item">
-        <div class="num" id="statMax">–</div>
-        <div class="label">En uzun mola</div>
-      </div>
-      <div class="item">
-        <div class="num" id="statBusyDay">–</div>
-        <div class="label">En yoğun gün</div>
-      </div>
-      <div class="item">
-        <div class="num" id="statTotalCount">0</div>
-        <div class="label">Toplam kayıt</div>
+    <div class="collapsible-header" onclick="toggleCollapse('statsBody', this)">
+      <span>İstatistikler (tüm zamanlar)</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="collapsible-body" id="statsBody" style="display:none;">
+      <div class="stats-grid">
+        <div class="item">
+          <div class="num" id="statAvg">–</div>
+          <div class="label">Ortalama mola süresi</div>
+        </div>
+        <div class="item">
+          <div class="num" id="statMax">–</div>
+          <div class="label">En uzun mola</div>
+        </div>
+        <div class="item">
+          <div class="num" id="statBusyDay">–</div>
+          <div class="label">En yoğun gün</div>
+        </div>
+        <div class="item">
+          <div class="num" id="statTotalCount">0</div>
+          <div class="label">Toplam kayıt</div>
+        </div>
       </div>
     </div>
   </div>
@@ -694,6 +790,14 @@ function applyTheme(){
   document.body.setAttribute('data-theme', theme);
   document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
 }
+function toggleCollapse(id, headerEl){
+  const body = document.getElementById(id);
+  const chevron = headerEl.querySelector('.chevron');
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
 function toggleTheme(){
   theme = theme === 'dark' ? 'light' : 'dark';
   applyTheme();
@@ -730,8 +834,13 @@ function playBeep(){
   });
 }
 
+function tapFeedback(){
+  if(navigator.vibrate) navigator.vibrate(10);
+}
+
 function startSession(type){
   if(activeSession) return;
+  tapFeedback();
   ensureAudio();
   activeSession = {start: Date.now(), type, note: ''};
   hasAlerted = false;
@@ -750,6 +859,7 @@ function updateNote(){
 
 function stopSession(){
   if(!activeSession) return;
+  tapFeedback();
   const end = Date.now();
   const key = todayKey(new Date(activeSession.start));
   if(!data[key]) data[key] = [];
@@ -774,7 +884,9 @@ function stopTick(){
 function updateClock(){
   if(!activeSession) return;
   const elapsed = Date.now() - activeSession.start;
-  document.getElementById('clockDisplay').textContent = fmtDuration(elapsed, true);
+  const formatted = fmtDuration(elapsed, true);
+  document.getElementById('clockDisplay').textContent = formatted;
+  document.getElementById('miniTimerClock').textContent = formatted;
 }
 function checkAlert(){
   if(!activeSession || sessionAlertMinutes <= 0) return;
@@ -801,6 +913,7 @@ function updateButtonState(){
   const active = document.getElementById('activeButtons');
   const status = document.getElementById('statusText');
   const stopBtn = document.querySelector('.btn-stop');
+  const miniBar = document.getElementById('miniTimerBar');
   if(activeSession){
     idle.style.display = 'none';
     active.style.display = 'block';
@@ -809,7 +922,10 @@ function updateButtonState(){
     status.textContent = TYPE_LABEL[activeSession.type].toUpperCase() + ' DEVAM EDİYOR';
     status.className = 'status active-' + activeSession.type;
     stopBtn.textContent = (activeSession.type === 'mola' ? 'Molayı Bitir' : 'Dış Ziyareti Bitir');
+    document.getElementById('miniTimerLabel').textContent = TYPE_LABEL[activeSession.type] + ' devam ediyor';
+    miniBar.className = 'mini-timer-bar ' + activeSession.type;
     checkAlert();
+    updateMiniBarVisibility();
   } else {
     idle.style.display = 'flex';
     active.style.display = 'none';
@@ -817,6 +933,17 @@ function updateButtonState(){
     status.textContent = 'AKTİF DEĞİL';
     status.className = 'status';
     document.getElementById('timerCard').classList.remove('alerting');
+    miniBar.classList.remove('show');
+  }
+}
+
+let timerCardVisible = true;
+function updateMiniBarVisibility(){
+  const miniBar = document.getElementById('miniTimerBar');
+  if(activeSession && !timerCardVisible){
+    miniBar.classList.add('show');
+  } else {
+    miniBar.classList.remove('show');
   }
 }
 
@@ -843,28 +970,73 @@ function renderList(){
   const list = document.getElementById('entryList');
   list.innerHTML = '';
   if(entries.length === 0){
-    list.innerHTML = '<div class="empty">Bu tarihte kayıt yok</div>';
+    list.innerHTML = `
+      <div class="empty">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:8px; opacity:0.5;">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 7v5l3 3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>Bu tarihte kayıt yok</div>
+      </div>`;
     return;
   }
   entries.forEach((e, idx)=>{
-    const div = document.createElement('div');
-    div.className = 'entry';
+    const originalIdx = entries.length - 1 - idx;
+    const wrap = document.createElement('div');
+    wrap.className = 'entry-swipe-wrap';
     const dur = e.end - e.start;
     const noteHtml = e.note ? `<div class="entry-note">${escapeHtml(e.note)}</div>` : '';
-    div.innerHTML = `
-      <div class="entry-main" onclick="editNote('${key}', ${entries.length-1-idx})">
-        <div class="times">
-          <span class="tag ${e.type}">${TYPE_LABEL[e.type]}</span>
-          ${fmtTime(new Date(e.start))}<span class="arrow">→</span>${fmtTime(new Date(e.end))}
+    wrap.innerHTML = `
+      <div class="entry-delete-bg">Sil</div>
+      <div class="entry">
+        <div class="entry-main" onclick="editNote('${key}', ${originalIdx})">
+          <div class="times">
+            <span class="tag ${e.type}">${TYPE_LABEL[e.type]}</span>
+            ${fmtTime(new Date(e.start))}<span class="arrow">→</span>${fmtTime(new Date(e.end))}
+          </div>
+          <div class="row-right">
+            <span class="dur ${e.type}">${fmtDuration(dur)}</span>
+            <button class="del" onclick="event.stopPropagation(); deleteEntry('${key}', ${originalIdx})">✕</button>
+          </div>
         </div>
-        <div class="row-right">
-          <span class="dur ${e.type}">${fmtDuration(dur)}</span>
-          <button class="del" onclick="event.stopPropagation(); deleteEntry('${key}', ${entries.length-1-idx})">✕</button>
-        </div>
+        ${noteHtml}
       </div>
-      ${noteHtml}
     `;
-    list.appendChild(div);
+    const entryEl = wrap.querySelector('.entry');
+    attachSwipeToDelete(entryEl, key, originalIdx);
+    list.appendChild(wrap);
+  });
+}
+
+function attachSwipeToDelete(el, key, originalIdx){
+  let startX = 0, currentX = 0, dragging = false;
+  const threshold = -90;
+
+  el.addEventListener('touchstart', (e)=>{
+    startX = e.touches[0].clientX;
+    dragging = true;
+    el.style.transition = 'none';
+  }, { passive: true });
+
+  el.addEventListener('touchmove', (e)=>{
+    if(!dragging) return;
+    currentX = e.touches[0].clientX - startX;
+    if(currentX > 0) currentX = 0;
+    if(currentX < -120) currentX = -120;
+    el.style.transform = `translateX(${currentX}px)`;
+  }, { passive: true });
+
+  el.addEventListener('touchend', ()=>{
+    if(!dragging) return;
+    dragging = false;
+    el.style.transition = 'transform 0.25s ease';
+    if(currentX <= threshold){
+      el.style.transform = 'translateX(-100%)';
+      setTimeout(()=> deleteEntry(key, originalIdx), 180);
+    } else {
+      el.style.transform = 'translateX(0)';
+    }
+    currentX = 0;
   });
 }
 
@@ -1276,6 +1448,14 @@ if(activeSession){
 }
 renderAll();
 window.addEventListener('resize', drawChart);
+
+if('IntersectionObserver' in window){
+  const timerObserver = new IntersectionObserver((entries)=>{
+    timerCardVisible = entries[0].isIntersecting;
+    updateMiniBarVisibility();
+  }, { threshold: 0 });
+  timerObserver.observe(document.getElementById('timerCard'));
+}
 
 // Kısayoldan (widget benzeri) gelen otomatik başlatma
 (function(){
