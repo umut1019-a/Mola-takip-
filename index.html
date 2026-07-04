@@ -436,6 +436,41 @@
     background:var(--mola);
     color:#fff;
   }
+
+  .undo-toast{
+    position:fixed;
+    left:50%;
+    bottom:24px;
+    transform:translate(-50%, 16px);
+    background:#2a2a2a;
+    color:#fff;
+    padding:12px 14px 12px 18px;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    font-size:13px;
+    box-shadow:0 8px 28px rgba(0,0,0,0.3);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.2s ease, transform 0.2s ease;
+    z-index:1100;
+    max-width:calc(100% - 40px);
+  }
+  .undo-toast.show{
+    opacity:1;
+    transform:translate(-50%, 0);
+    pointer-events:auto;
+  }
+  .undo-toast button{
+    background:none;
+    border:none;
+    color:#7fd0ff;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:0.3px;
+    padding:4px 6px;
+  }
 </style>
 </head>
 <body>
@@ -564,6 +599,11 @@
   </div>
 </div>
 
+<div class="undo-toast" id="undoToast">
+  <span>Kayıt silindi</span>
+  <button onclick="undoDelete()">GERİ AL</button>
+</div>
+
 <script>
 const STORAGE_KEY = 'mola_takip_data_v2';
 const ACTIVE_KEY = 'mola_takip_active_v2';
@@ -680,14 +720,32 @@ function stopSession(){
   activeSession = null;
   hasAlerted = false;
   stopTick();
+  clearAppBadge();
   document.getElementById('timerCard').classList.remove('alerting');
   save();
   renderAll();
 }
 
+let lastBadgeMinute = -1;
+function updateAppBadge(){
+  if(!('setAppBadge' in navigator)) return;
+  if(!activeSession) return;
+  const elapsedMin = Math.floor((Date.now() - activeSession.start) / 60000);
+  if(elapsedMin === lastBadgeMinute) return;
+  lastBadgeMinute = elapsedMin;
+  navigator.setAppBadge(elapsedMin).catch(()=>{});
+}
+function clearAppBadge(){
+  lastBadgeMinute = -1;
+  if('clearAppBadge' in navigator){
+    navigator.clearAppBadge().catch(()=>{});
+  }
+}
+
 function startTick(){
   updateClock();
-  tickInterval = setInterval(()=>{ updateClock(); renderPeriodSummary(); checkAlert(); }, 1000);
+  updateAppBadge();
+  tickInterval = setInterval(()=>{ updateClock(); renderPeriodSummary(); checkAlert(); updateAppBadge(); }, 1000);
 }
 function stopTick(){
   clearInterval(tickInterval);
@@ -832,15 +890,44 @@ function saveNoteModal(){
   closeNoteModal();
 }
 
+let lastDeleted = null;
+let undoTimeout = null;
+
 function deleteEntry(key, originalIdx){
   const realIdx = findEntryByOriginalIdx(key, originalIdx);
   if(realIdx > -1){
+    const entry = data[key][realIdx];
+    lastDeleted = { key, entry: {...entry} };
     data[key].splice(realIdx,1);
     if(data[key].length === 0) delete data[key];
     save();
     populateDateSelect();
     renderAll();
+    showUndoToast();
   }
+}
+
+function showUndoToast(){
+  const toast = document.getElementById('undoToast');
+  toast.classList.add('show');
+  clearTimeout(undoTimeout);
+  undoTimeout = setTimeout(()=>{
+    toast.classList.remove('show');
+    lastDeleted = null;
+  }, 5000);
+}
+
+function undoDelete(){
+  if(!lastDeleted) return;
+  const { key, entry } = lastDeleted;
+  if(!data[key]) data[key] = [];
+  data[key].push(entry);
+  lastDeleted = null;
+  clearTimeout(undoTimeout);
+  document.getElementById('undoToast').classList.remove('show');
+  save();
+  populateDateSelect();
+  renderAll();
 }
 
 function updateLimit(){
