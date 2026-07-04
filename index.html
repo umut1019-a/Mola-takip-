@@ -8,7 +8,6 @@
 <meta name="theme-color" content="#2f6f4f">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
     --bg:#fafaf9;
@@ -471,6 +470,37 @@
     letter-spacing:0.3px;
     padding:4px 6px;
   }
+
+  .limit-progress-wrap{
+    margin-bottom:14px;
+  }
+  .limit-progress-track{
+    width:100%;
+    height:10px;
+    border-radius:6px;
+    background:var(--line);
+    overflow:hidden;
+  }
+  .limit-progress-fill{
+    height:100%;
+    width:0%;
+    border-radius:6px;
+    background:#3fa96a;
+    transition:width 0.4s ease, background 0.4s ease;
+  }
+  .limit-progress-fill.warn{
+    background:#e0a83c;
+  }
+  .limit-progress-fill.danger{
+    background:#d9534f;
+  }
+  .limit-progress-label{
+    display:flex;
+    justify-content:space-between;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:5px;
+  }
 </style>
 </head>
 <body>
@@ -484,6 +514,13 @@
   </div>
 
   <div class="banner" id="limitBanner"></div>
+
+  <div class="limit-progress-wrap" id="limitProgressWrap">
+    <div class="limit-progress-track">
+      <div class="limit-progress-fill" id="limitProgressFill"></div>
+    </div>
+    <div class="limit-progress-label" id="limitProgressLabel"></div>
+  </div>
 
   <div class="timer-card" id="timerCard">
     <div class="status" id="statusText">AKTİF DEĞİL</div>
@@ -720,32 +757,14 @@ function stopSession(){
   activeSession = null;
   hasAlerted = false;
   stopTick();
-  clearAppBadge();
   document.getElementById('timerCard').classList.remove('alerting');
   save();
   renderAll();
 }
 
-let lastBadgeMinute = -1;
-function updateAppBadge(){
-  if(!('setAppBadge' in navigator)) return;
-  if(!activeSession) return;
-  const elapsedMin = Math.floor((Date.now() - activeSession.start) / 60000);
-  if(elapsedMin === lastBadgeMinute) return;
-  lastBadgeMinute = elapsedMin;
-  navigator.setAppBadge(elapsedMin).catch(()=>{});
-}
-function clearAppBadge(){
-  lastBadgeMinute = -1;
-  if('clearAppBadge' in navigator){
-    navigator.clearAppBadge().catch(()=>{});
-  }
-}
-
 function startTick(){
   updateClock();
-  updateAppBadge();
-  tickInterval = setInterval(()=>{ updateClock(); renderPeriodSummary(); checkAlert(); updateAppBadge(); }, 1000);
+  tickInterval = setInterval(()=>{ updateClock(); renderPeriodSummary(); checkAlert(); }, 1000);
 }
 function stopTick(){
   clearInterval(tickInterval);
@@ -1018,6 +1037,25 @@ function renderPeriodSummary(){
   } else {
     banner.className = 'banner';
   }
+
+  // Günlük limit ilerleme çubuğu
+  const progressWrap = document.getElementById('limitProgressWrap');
+  const fill = document.getElementById('limitProgressFill');
+  const label = document.getElementById('limitProgressLabel');
+  if(dailyLimit > 0){
+    progressWrap.style.display = 'block';
+    const pct = Math.min(100, (molaMin / dailyLimit) * 100);
+    fill.style.width = pct + '%';
+    fill.classList.remove('warn', 'danger');
+    if(molaMin > dailyLimit){
+      fill.classList.add('danger');
+    } else if(pct >= 70){
+      fill.classList.add('warn');
+    }
+    label.textContent = `Bugün limitin %${Math.round(Math.min(pct,999))}'ini kullandın (${Math.round(molaMin)} / ${dailyLimit}dk)`;
+  } else {
+    progressWrap.style.display = 'none';
+  }
 }
 
 function renderAllTimeStats(){
@@ -1127,6 +1165,20 @@ function drawChart(){
   });
 }
 
+let xlsxLoadPromise = null;
+function loadXlsxLib(){
+  if(window.XLSX) return Promise.resolve();
+  if(xlsxLoadPromise) return xlsxLoadPromise;
+  xlsxLoadPromise = new Promise((resolve, reject)=>{
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    script.onload = () => resolve();
+    script.onerror = () => { xlsxLoadPromise = null; reject(new Error('xlsx yüklenemedi')); };
+    document.head.appendChild(script);
+  });
+  return xlsxLoadPromise;
+}
+
 function exportExcel(){
   const rows = [['Tarih','Tür','Başlangıç','Bitiş','Süre (dakika)','Not']];
   Object.keys(data).sort().forEach(key=>{
@@ -1145,11 +1197,20 @@ function exportExcel(){
     alert('Dışa aktarılacak kayıt yok.');
     return;
   }
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:12},{wch:12},{wch:10},{wch:10},{wch:14},{wch:24}];
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Kayıtlar');
-  XLSX.writeFile(wb, 'mola_takip_' + todayKey() + '.xlsx');
+  const btn = document.querySelector('.export-btn');
+  const originalLabel = btn ? btn.textContent : '';
+  if(btn){ btn.textContent = 'Yükleniyor...'; btn.disabled = true; }
+  loadXlsxLib().then(()=>{
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:12},{wch:12},{wch:10},{wch:10},{wch:14},{wch:24}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Kayıtlar');
+    XLSX.writeFile(wb, 'mola_takip_' + todayKey() + '.xlsx');
+  }).catch(()=>{
+    alert('Excel kütüphanesi yüklenemedi. İnternet bağlantınızı kontrol edin.');
+  }).finally(()=>{
+    if(btn){ btn.textContent = originalLabel; btn.disabled = false; }
+  });
 }
 
 function exportBackup(){
@@ -1236,7 +1297,7 @@ if('serviceWorker' in navigator){
   });
 
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js').then((reg) => {
+    navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' }).then((reg) => {
       // Sayfa her açıldığında/öne geldiğinde güncelleme olup olmadığını kontrol et
       reg.update().catch(()=>{});
       document.addEventListener('visibilitychange', () => {

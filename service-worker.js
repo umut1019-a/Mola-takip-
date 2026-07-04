@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mola-takip-v8';
+const CACHE_NAME = 'mola-takip-v9';
 const ASSETS = [
   './index.html',
   './manifest.json',
@@ -8,7 +8,19 @@ const ASSETS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => {
+      // 'reload' tarayıcı HTTP önbelleğini atlar; her zaman gerçekten güncel
+      // dosyaları alıp yeni cache'e koyar. addAll() burada kullanılmıyor çünkü
+      // o, HTTP cache'inden eski (bayat) bir kopya döndürebiliyordu.
+      return Promise.all(
+        ASSETS.map((url) =>
+          fetch(url, { cache: 'reload' }).then((response) => {
+            if (!response.ok) throw new Error('Fetch failed: ' + url);
+            return cache.put(url, response);
+          })
+        )
+      );
+    })
   );
   self.skipWaiting();
 });
