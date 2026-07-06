@@ -1224,7 +1224,11 @@ function renderPeriodSummary(){
     } else if(pct >= 70){
       fill.classList.add('warn');
     }
-    label.textContent = `Bugün limitin %${Math.round(Math.min(pct,999))}'ini kullandın (${Math.round(molaMin)} / ${dailyLimit}dk)`;
+    const remaining = Math.round(dailyLimit - molaMin);
+    const remainingText = remaining > 0
+      ? `Kalan molan ${remaining} dakika`
+      : `Kalan molan yok`;
+    label.textContent = `Bugün limitin %${Math.round(Math.min(pct,999))}'ini kullandın (${Math.round(molaMin)} / ${dailyLimit}dk) · ${remainingText}`;
   } else {
     progressWrap.style.display = 'none';
   }
