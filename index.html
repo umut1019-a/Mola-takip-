@@ -334,20 +334,6 @@
     margin-bottom:12px;
     gap:8px;
   }
-  .compare-btn{
-    padding:6px 12px;
-    font-size:11px;
-    border-radius:8px;
-    background:var(--bg);
-    color:var(--muted);
-    border:1px solid var(--line);
-    font-weight:600;
-  }
-  .compare-btn.on{
-    background:var(--ink);
-    color:var(--bg);
-    border-color:var(--ink);
-  }
   .legend-item{
     cursor:pointer;
     transition:opacity 0.15s ease;
@@ -782,7 +768,6 @@
         <button id="range7" class="on" onclick="setRange(7)">7 gün</button>
         <button id="range30" onclick="setRange(30)">30 gün</button>
       </div>
-      <button class="compare-btn" id="compareBtn" onclick="toggleCompare()">Karşılaştır</button>
     </div>
     <canvas id="chart" height="140"></canvas>
     <div class="chart-tooltip" id="chartTooltip"></div>
@@ -843,7 +828,6 @@ let theme = localStorage.getItem(THEME_KEY) || 'light';
 let chartRange = 7;
 let chartBars = [];
 let chartOffset = 0;
-let compareMode = false;
 let hideMola = false;
 let hideIs = false;
 let currentPeriod = 'today';
@@ -1378,12 +1362,6 @@ function navigateChart(direction){
   drawChart();
 }
 
-function toggleCompare(){
-  compareMode = !compareMode;
-  document.getElementById('compareBtn').className = compareMode ? 'compare-btn on' : 'compare-btn';
-  drawChart();
-}
-
 function toggleLegendFilter(type){
   if(type === 'mola'){ hideMola = !hideMola; }
   else { hideIs = !hideIs; }
@@ -1449,9 +1427,19 @@ function handleChartTap(clientX){
   const d = new Date(bar.key + 'T00:00:00');
   const dateLabel = d.toLocaleDateString('tr-TR', { day:'numeric', month:'long', weekday:'long' });
   tooltip.innerHTML = `<strong>${dateLabel}</strong><br><span class="tt-mola">Mola: ${Math.round(bar.molaMin)}dk</span><br><span class="tt-is">Dış Ziyaret: ${Math.round(bar.isMin)}dk</span>`;
-  tooltip.style.left = (bar.x + bar.width/2) + 'px';
+  tooltip.style.left = '0px';
   tooltip.style.top = '10px';
   tooltip.classList.add('show');
+
+  const card = canvas.parentElement;
+  const cardWidth = card.clientWidth;
+  const tooltipWidth = tooltip.offsetWidth;
+  const rawCenter = canvas.offsetLeft + bar.x + bar.width/2;
+  const minCenter = tooltipWidth/2 + 4;
+  const maxCenter = cardWidth - tooltipWidth/2 - 4;
+  const clampedCenter = Math.max(minCenter, Math.min(maxCenter, rawCenter));
+  tooltip.style.left = clampedCenter + 'px';
+
   clearTimeout(window._chartTooltipTimeout);
   window._chartTooltipTimeout = setTimeout(()=> tooltip.classList.remove('show'), 3000);
 }
@@ -1490,7 +1478,6 @@ function drawChart(){
   const prevVisTotals = prevDays.map((_,i)=> (hideMola?0:prevSums.molaMins[i]) + (hideIs?0:prevSums.isMins[i]));
 
   let maxVal = Math.max(10, ...visTotals);
-  if(compareMode){ maxVal = Math.max(maxVal, ...prevVisTotals); }
 
   const chartH = cssHeight - 24;
   const barGap = chartRange === 30 ? 2 : 8;
@@ -1503,14 +1490,6 @@ function drawChart(){
 
   days.forEach((k, i)=>{
     const x = i * (barW + barGap) + barGap/2;
-
-    if(compareMode){
-      const prevH = (prevVisTotals[i]/maxVal) * chartH;
-      ctx.globalAlpha = 0.32;
-      ctx.fillStyle = mutedColor;
-      ctx.fillRect(x, chartH - prevH, barW, prevH);
-      ctx.globalAlpha = 1;
-    }
 
     const mH = (hideMola ? 0 : molaMins[i]/maxVal * chartH);
     const sH = (hideIs ? 0 : isMins[i]/maxVal * chartH);
@@ -1530,28 +1509,6 @@ function drawChart(){
       ctx.fillText(label, x + barW/2, cssHeight - 6);
     }
   });
-
-  // Ortalama çizgisi (bugüne kadar olan günler üzerinden)
-  const pastDays = days.filter(k => new Date(k+'T23:59:59') <= now);
-  const divisor = pastDays.length || days.length;
-  const sumForAvg = days.reduce((acc,k,i)=> acc + (new Date(k+'T23:59:59') <= now ? visTotals[i] : 0), 0);
-  const avg = sumForAvg / divisor;
-  if(avg > 0){
-    const avgY = chartH - (avg/maxVal)*chartH;
-    ctx.save();
-    ctx.strokeStyle = mutedColor;
-    ctx.setLineDash([4,4]);
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, avgY);
-    ctx.lineTo(cssWidth, avgY);
-    ctx.stroke();
-    ctx.restore();
-    ctx.fillStyle = mutedColor;
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('Ort: ' + Math.round(avg) + 'dk', cssWidth - 2, Math.max(10, avgY - 4));
-  }
 
   // Üst navigasyon/etiket ve trend
   document.getElementById('chartPeriodLabel').textContent = formatPeriodLabel(days);

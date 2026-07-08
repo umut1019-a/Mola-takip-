@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mola-takip-v13';
+const CACHE_NAME = 'mola-takip-v14';
 const ASSETS = [
   './index.html',
   './manifest.json',
