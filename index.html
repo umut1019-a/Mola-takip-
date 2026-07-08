@@ -267,7 +267,26 @@
     border-radius:16px;
     padding:18px 20px;
     margin-bottom:16px;
+    position:relative;
   }
+  .chart-tooltip{
+    position:absolute;
+    background:var(--ink);
+    color:var(--bg);
+    padding:8px 12px;
+    border-radius:10px;
+    font-size:12px;
+    line-height:1.5;
+    pointer-events:none;
+    transform:translate(-50%, -110%);
+    white-space:nowrap;
+    box-shadow:0 4px 12px rgba(0,0,0,0.2);
+    z-index:10;
+    display:none;
+  }
+  .chart-tooltip.show{display:block;}
+  .chart-tooltip .tt-mola{color:#8fd4ac;}
+  .chart-tooltip .tt-is{color:#9cc4ea;}
   .chart-header{
     display:flex;
     justify-content:space-between;
@@ -275,8 +294,70 @@
     margin-bottom:12px;
   }
   .chart-header span{font-size:13px; font-weight:600; color:var(--muted);}
-  .chart-header .toggles{display:flex; gap:6px;}
-  .chart-header .toggles button{
+  .trend-indicator{
+    font-size:12px;
+    font-weight:700;
+  }
+  .trend-indicator.up{color:var(--danger);}
+  .trend-indicator.down{color:var(--mola);}
+  .chart-subheader{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .nav-btn{
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--ink);
+    width:28px;
+    height:28px;
+    padding:0;
+    border-radius:8px;
+    font-size:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .nav-btn:disabled{opacity:0.35;}
+  .chart-period-label{
+    font-size:12px;
+    color:var(--muted);
+    min-width:120px;
+    text-align:center;
+  }
+  .chart-controls{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+    gap:8px;
+  }
+  .compare-btn{
+    padding:6px 12px;
+    font-size:11px;
+    border-radius:8px;
+    background:var(--bg);
+    color:var(--muted);
+    border:1px solid var(--line);
+    font-weight:600;
+  }
+  .compare-btn.on{
+    background:var(--ink);
+    color:var(--bg);
+    border-color:var(--ink);
+  }
+  .legend-item{
+    cursor:pointer;
+    transition:opacity 0.15s ease;
+  }
+  .legend-item.hidden{
+    opacity:0.35;
+    text-decoration:line-through;
+  }
+  .toggles{display:flex; gap:6px;}
+  .toggles button{
     padding:5px 10px;
     font-size:11px;
     border-radius:8px;
@@ -285,7 +366,7 @@
     border:1px solid var(--line);
     font-weight:600;
   }
-  .chart-header .toggles button.on{
+  .toggles button.on{
     background:var(--ink);
     color:var(--bg);
     border-color:var(--ink);
@@ -689,15 +770,25 @@
   <div class="chart-card">
     <div class="chart-header">
       <span>Günlük Özet</span>
+      <span class="trend-indicator" id="trendIndicator"></span>
+    </div>
+    <div class="chart-subheader">
+      <button class="nav-btn" onclick="navigateChart(1)">‹</button>
+      <span class="chart-period-label" id="chartPeriodLabel"></span>
+      <button class="nav-btn" id="navNextBtn" onclick="navigateChart(-1)">›</button>
+    </div>
+    <div class="chart-controls">
       <div class="toggles">
         <button id="range7" class="on" onclick="setRange(7)">7 gün</button>
         <button id="range30" onclick="setRange(30)">30 gün</button>
       </div>
+      <button class="compare-btn" id="compareBtn" onclick="toggleCompare()">Karşılaştır</button>
     </div>
     <canvas id="chart" height="140"></canvas>
+    <div class="chart-tooltip" id="chartTooltip"></div>
     <div class="legend">
-      <span><i class="dot mola"></i>Mola</span>
-      <span><i class="dot is"></i>Dış Ziyaret</span>
+      <span class="legend-item" id="legendMola" onclick="toggleLegendFilter('mola')"><i class="dot mola"></i>Mola</span>
+      <span class="legend-item" id="legendIs" onclick="toggleLegendFilter('is')"><i class="dot is"></i>Dış Ziyaret</span>
     </div>
   </div>
 
@@ -750,6 +841,11 @@ let dailyLimit = parseInt(localStorage.getItem(LIMIT_KEY) || '60', 10);
 let sessionAlertMinutes = parseInt(localStorage.getItem(ALERT_KEY) || '15', 10);
 let theme = localStorage.getItem(THEME_KEY) || 'light';
 let chartRange = 7;
+let chartBars = [];
+let chartOffset = 0;
+let compareMode = false;
+let hideMola = false;
+let hideIs = false;
 let currentPeriod = 'today';
 let tickInterval = null;
 let hasAlerted = false;
@@ -1267,9 +1363,105 @@ function renderAllTimeStats(){
 
 function setRange(days){
   chartRange = days;
+  chartOffset = 0;
   document.getElementById('range7').className = days===7 ? 'on' : '';
   document.getElementById('range30').className = days===30 ? 'on' : '';
   drawChart();
+}
+
+function navigateChart(direction){
+  // direction: 1 = geri (daha eski), -1 = ileri (daha yeni)
+  const newOffset = chartOffset + direction;
+  if(newOffset < 0) return;
+  if(newOffset > 104) return;
+  chartOffset = newOffset;
+  drawChart();
+}
+
+function toggleCompare(){
+  compareMode = !compareMode;
+  document.getElementById('compareBtn').className = compareMode ? 'compare-btn on' : 'compare-btn';
+  drawChart();
+}
+
+function toggleLegendFilter(type){
+  if(type === 'mola'){ hideMola = !hideMola; }
+  else { hideIs = !hideIs; }
+  document.getElementById('legendMola').className = 'legend-item' + (hideMola ? ' hidden' : '');
+  document.getElementById('legendIs').className = 'legend-item' + (hideIs ? ' hidden' : '');
+  drawChart();
+}
+
+function getPeriodDays(range, offset){
+  const days = [];
+  const now = new Date();
+  if(range === 7){
+    const monday = getWeekStart(now);
+    monday.setDate(monday.getDate() - offset*7);
+    for(let i=0;i<7;i++){
+      const d = new Date(monday);
+      d.setDate(monday.getDate()+i);
+      days.push(todayKey(d));
+    }
+  } else {
+    const end = new Date(now);
+    end.setDate(end.getDate() - offset*30);
+    for(let i=29;i>=0;i--){
+      const d = new Date(end);
+      d.setDate(d.getDate()-i);
+      days.push(todayKey(d));
+    }
+  }
+  return days;
+}
+
+function computeDayTotals(days){
+  const molaMins = [], isMins = [];
+  days.forEach(k=>{
+    const entries = data[k] || [];
+    let m=0, s=0;
+    entries.forEach(e=>{
+      const min = (e.end - e.start)/60000;
+      if(e.type==='mola') m+=min; else s+=min;
+    });
+    molaMins.push(m); isMins.push(s);
+  });
+  return { molaMins, isMins };
+}
+
+function formatPeriodLabel(days){
+  const start = new Date(days[0] + 'T00:00:00');
+  const end = new Date(days[days.length-1] + 'T00:00:00');
+  const opts = { day:'numeric', month:'short' };
+  return start.toLocaleDateString('tr-TR', opts) + ' – ' + end.toLocaleDateString('tr-TR', opts);
+}
+
+function handleChartTap(clientX){
+  const canvas = document.getElementById('chart');
+  const rect = canvas.getBoundingClientRect();
+  const x = clientX - rect.left;
+  const bar = chartBars.find(b => x >= b.x && x <= b.x + b.width);
+  const tooltip = document.getElementById('chartTooltip');
+  if(!bar){
+    tooltip.classList.remove('show');
+    return;
+  }
+  const d = new Date(bar.key + 'T00:00:00');
+  const dateLabel = d.toLocaleDateString('tr-TR', { day:'numeric', month:'long', weekday:'long' });
+  tooltip.innerHTML = `<strong>${dateLabel}</strong><br><span class="tt-mola">Mola: ${Math.round(bar.molaMin)}dk</span><br><span class="tt-is">Dış Ziyaret: ${Math.round(bar.isMin)}dk</span>`;
+  tooltip.style.left = (bar.x + bar.width/2) + 'px';
+  tooltip.style.top = '10px';
+  tooltip.classList.add('show');
+  clearTimeout(window._chartTooltipTimeout);
+  window._chartTooltipTimeout = setTimeout(()=> tooltip.classList.remove('show'), 3000);
+}
+
+function setupChartInteraction(){
+  const canvas = document.getElementById('chart');
+  canvas.addEventListener('click', (e)=> handleChartTap(e.clientX));
+  canvas.addEventListener('touchstart', (e)=>{
+    if(e.touches[0]) handleChartTap(e.touches[0].clientX);
+  }, { passive: true });
 }
 
 function drawChart(){
@@ -1285,35 +1477,21 @@ function drawChart(){
   ctx.scale(dpr, dpr);
   ctx.clearRect(0,0,cssWidth,cssHeight);
 
-  const days = [];
+  const days = getPeriodDays(chartRange, chartOffset);
+  const { molaMins, isMins } = computeDayTotals(days);
   const now = new Date();
-  if(chartRange === 7){
-    const monday = getWeekStart(now);
-    for(let i = 0; i < 7; i++){
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      days.push(todayKey(d));
-    }
-  } else {
-    for(let i = chartRange - 1; i >= 0; i--){
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      days.push(todayKey(d));
-    }
-  }
 
-  const molaMins = [], isMins = [];
-  days.forEach(k=>{
-    const entries = data[k] || [];
-    let m=0, s=0;
-    entries.forEach(e=>{
-      const min = (e.end - e.start)/60000;
-      if(e.type==='mola') m+=min; else s+=min;
-    });
-    molaMins.push(m); isMins.push(s);
-  });
+  // Görünen (filtrelenmiş) toplamlar
+  const visTotals = days.map((_,i)=> (hideMola?0:molaMins[i]) + (hideIs?0:isMins[i]));
 
-  const maxVal = Math.max(10, ...days.map((_,i)=>molaMins[i]+isMins[i]));
+  // Önceki eşit uzunluktaki dönem (karşılaştırma ve trend için)
+  const prevDays = getPeriodDays(chartRange, chartOffset+1);
+  const prevSums = computeDayTotals(prevDays);
+  const prevVisTotals = prevDays.map((_,i)=> (hideMola?0:prevSums.molaMins[i]) + (hideIs?0:prevSums.isMins[i]));
+
+  let maxVal = Math.max(10, ...visTotals);
+  if(compareMode){ maxVal = Math.max(maxVal, ...prevVisTotals); }
+
   const chartH = cssHeight - 24;
   const barGap = chartRange === 30 ? 2 : 8;
   const barW = (cssWidth / days.length) - barGap;
@@ -1321,24 +1499,83 @@ function drawChart(){
   const isColor = getComputedStyle(document.body).getPropertyValue('--is').trim() || '#2f5f8f';
   const mutedColor = getComputedStyle(document.body).getPropertyValue('--muted').trim() || '#8a8a85';
 
+  chartBars = [];
+
   days.forEach((k, i)=>{
     const x = i * (barW + barGap) + barGap/2;
-    const mH = (molaMins[i]/maxVal) * chartH;
-    const sH = (isMins[i]/maxVal) * chartH;
+
+    if(compareMode){
+      const prevH = (prevVisTotals[i]/maxVal) * chartH;
+      ctx.globalAlpha = 0.32;
+      ctx.fillStyle = mutedColor;
+      ctx.fillRect(x, chartH - prevH, barW, prevH);
+      ctx.globalAlpha = 1;
+    }
+
+    const mH = (hideMola ? 0 : molaMins[i]/maxVal * chartH);
+    const sH = (hideIs ? 0 : isMins[i]/maxVal * chartH);
     ctx.fillStyle = molaColor;
     ctx.fillRect(x, chartH - mH, barW, mH);
     ctx.fillStyle = isColor;
     ctx.fillRect(x, chartH - mH - sH, barW, sH);
 
+    chartBars.push({ x, width: barW, key: k, molaMin: molaMins[i], isMin: isMins[i] });
+
     if(chartRange === 7){
       ctx.fillStyle = mutedColor;
       ctx.font = '10px sans-serif';
       ctx.textAlign = 'center';
-      const d = new Date(k);
+      const d = new Date(k + 'T00:00:00');
       const label = d.toLocaleDateString('tr-TR', {weekday:'short'});
       ctx.fillText(label, x + barW/2, cssHeight - 6);
     }
   });
+
+  // Ortalama çizgisi (bugüne kadar olan günler üzerinden)
+  const pastDays = days.filter(k => new Date(k+'T23:59:59') <= now);
+  const divisor = pastDays.length || days.length;
+  const sumForAvg = days.reduce((acc,k,i)=> acc + (new Date(k+'T23:59:59') <= now ? visTotals[i] : 0), 0);
+  const avg = sumForAvg / divisor;
+  if(avg > 0){
+    const avgY = chartH - (avg/maxVal)*chartH;
+    ctx.save();
+    ctx.strokeStyle = mutedColor;
+    ctx.setLineDash([4,4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, avgY);
+    ctx.lineTo(cssWidth, avgY);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = mutedColor;
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('Ort: ' + Math.round(avg) + 'dk', cssWidth - 2, Math.max(10, avgY - 4));
+  }
+
+  // Üst navigasyon/etiket ve trend
+  document.getElementById('chartPeriodLabel').textContent = formatPeriodLabel(days);
+  document.getElementById('navNextBtn').disabled = (chartOffset === 0);
+
+  const currentTotal = visTotals.reduce((a,b)=>a+b,0);
+  const prevTotal = prevVisTotals.reduce((a,b)=>a+b,0);
+  const trendEl = document.getElementById('trendIndicator');
+  if(prevTotal > 0){
+    const pct = Math.round(((currentTotal - prevTotal) / prevTotal) * 100);
+    if(pct === 0){
+      trendEl.textContent = '= %0';
+      trendEl.className = 'trend-indicator';
+    } else if(pct > 0){
+      trendEl.textContent = '▲ %' + pct;
+      trendEl.className = 'trend-indicator up';
+    } else {
+      trendEl.textContent = '▼ %' + Math.abs(pct);
+      trendEl.className = 'trend-indicator down';
+    }
+  } else {
+    trendEl.textContent = '';
+    trendEl.className = 'trend-indicator';
+  }
 }
 
 let xlsxLoadPromise = null;
@@ -1452,6 +1689,7 @@ if(activeSession){
 }
 renderAll();
 window.addEventListener('resize', drawChart);
+setupChartInteraction();
 
 if('IntersectionObserver' in window){
   const timerObserver = new IntersectionObserver((entries)=>{
