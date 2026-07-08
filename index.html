@@ -1507,6 +1507,15 @@ function drawChart(){
       const d = new Date(k + 'T00:00:00');
       const label = d.toLocaleDateString('tr-TR', {weekday:'short'});
       ctx.fillText(label, x + barW/2, cssHeight - 6);
+    } else if(chartRange === 30){
+      const showLabel = (i % 5 === 0) || (i === days.length - 1);
+      if(showLabel){
+        ctx.fillStyle = mutedColor;
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'center';
+        const d = new Date(k + 'T00:00:00');
+        ctx.fillText(String(d.getDate()), x + barW/2, cssHeight - 6);
+      }
     }
   });
 
