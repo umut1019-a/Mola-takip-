@@ -19,6 +19,8 @@
     --mola-soft:#e7f2ec;
     --is:#2f5f8f;
     --is-soft:#e6eef6;
+    --mesai:#a5691e;
+    --mesai-soft:#f5e9d8;
     --danger:#b5482f;
     --danger-soft:#fbe9e4;
     --input-bg:#fafaf9;
@@ -33,6 +35,8 @@
     --mola-soft:#1e2e26;
     --is:#6fa3d8;
     --is-soft:#1c2733;
+    --mesai:#d9a35a;
+    --mesai-soft:#3a2c19;
     --danger:#e08063;
     --danger-soft:#3a241d;
     --input-bg:#15140f;
@@ -112,20 +116,13 @@
   }
   .status.active-mola{color:var(--mola);}
   .status.active-is{color:var(--is);}
-  #idleButtons, #activeButtons{
-    animation: fadeIn 0.25s ease;
-  }
-  @keyframes fadeIn{
-    from{ opacity:0; transform:translateY(4px); }
-    to{ opacity:1; transform:translateY(0); }
-  }
+  .status.active-mesai{color:var(--mesai);}
   .clock{
     font-size:44px;
     font-weight:300;
     font-variant-numeric:tabular-nums;
     margin-bottom:20px;
     letter-spacing:1px;
-    transition:color 0.2s ease;
   }
   .note-input{
     width:100%;
@@ -154,10 +151,11 @@
     transition:opacity .15s ease, transform .1s ease;
     font-family:inherit;
   }
-  button:active{transform:scale(0.97); filter:brightness(0.92);}
-  .btn-row{display:flex; gap:10px; justify-content:center;}
+  button:active{transform:scale(0.97);}
+  .btn-row{display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
   .btn-mola{background:var(--mola); color:#fff;}
   .btn-is{background:var(--is); color:#fff;}
+  .btn-mesai{background:var(--mesai); color:#fff;}
   .btn-stop{background:var(--danger); color:#fff; width:100%; padding:14px 32px;}
 
   .tabs{
@@ -182,11 +180,12 @@
 
   .summary{
     display:flex;
+    flex-wrap:wrap;
     gap:10px;
     margin-bottom:16px;
   }
   .stat{
-    flex:1;
+    flex:1 1 calc(50% - 5px);
     background:var(--card);
     border:1px solid var(--line);
     border-radius:14px;
@@ -197,6 +196,7 @@
   .stat .label{font-size:11px; color:var(--muted); margin-top:2px;}
   .stat.mola .num{color:var(--mola);}
   .stat.is .num{color:var(--is);}
+  .stat.mesai .num{color:var(--mesai);}
 
   .settings-card{
     background:var(--card);
@@ -204,22 +204,6 @@
     border-radius:14px;
     padding:14px 16px;
     margin-bottom:16px;
-  }
-  .collapsible-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    cursor:pointer;
-    font-size:13px;
-    font-weight:600;
-    color:var(--muted);
-  }
-  .collapsible-header .chevron{
-    font-size:11px;
-    transition:transform 0.2s ease;
-  }
-  .collapsible-body{
-    margin-top:10px;
   }
   .settings-row{
     display:flex;
@@ -267,26 +251,7 @@
     border-radius:16px;
     padding:18px 20px;
     margin-bottom:16px;
-    position:relative;
   }
-  .chart-tooltip{
-    position:absolute;
-    background:var(--ink);
-    color:var(--bg);
-    padding:8px 12px;
-    border-radius:10px;
-    font-size:12px;
-    line-height:1.5;
-    pointer-events:none;
-    transform:translate(-50%, -110%);
-    white-space:nowrap;
-    box-shadow:0 4px 12px rgba(0,0,0,0.2);
-    z-index:10;
-    display:none;
-  }
-  .chart-tooltip.show{display:block;}
-  .chart-tooltip .tt-mola{color:#8fd4ac;}
-  .chart-tooltip .tt-is{color:#9cc4ea;}
   .chart-header{
     display:flex;
     justify-content:space-between;
@@ -294,56 +259,8 @@
     margin-bottom:12px;
   }
   .chart-header span{font-size:13px; font-weight:600; color:var(--muted);}
-  .trend-indicator{
-    font-size:12px;
-    font-weight:700;
-  }
-  .trend-indicator.up{color:var(--danger);}
-  .trend-indicator.down{color:var(--mola);}
-  .chart-subheader{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
-    margin-bottom:10px;
-  }
-  .nav-btn{
-    background:var(--bg);
-    border:1px solid var(--line);
-    color:var(--ink);
-    width:28px;
-    height:28px;
-    padding:0;
-    border-radius:8px;
-    font-size:14px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
-  .nav-btn:disabled{opacity:0.35;}
-  .chart-period-label{
-    font-size:12px;
-    color:var(--muted);
-    min-width:120px;
-    text-align:center;
-  }
-  .chart-controls{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:12px;
-    gap:8px;
-  }
-  .legend-item{
-    cursor:pointer;
-    transition:opacity 0.15s ease;
-  }
-  .legend-item.hidden{
-    opacity:0.35;
-    text-decoration:line-through;
-  }
-  .toggles{display:flex; gap:6px;}
-  .toggles button{
+  .chart-header .toggles{display:flex; gap:6px;}
+  .chart-header .toggles button{
     padding:5px 10px;
     font-size:11px;
     border-radius:8px;
@@ -352,7 +269,7 @@
     border:1px solid var(--line);
     font-weight:600;
   }
-  .toggles button.on{
+  .chart-header .toggles button.on{
     background:var(--ink);
     color:var(--bg);
     border-color:var(--ink);
@@ -362,6 +279,7 @@
   .dot{width:8px; height:8px; border-radius:2px; display:inline-block;}
   .dot.mola{background:var(--mola);}
   .dot.is{background:var(--is);}
+  .dot.mesai{background:var(--mesai);}
   canvas{width:100%; display:block;}
 
   .list-card{
@@ -391,29 +309,9 @@
   }
   .entry{
     padding:12px 20px;
+    border-top:1px solid var(--line);
     font-size:14px;
     cursor:pointer;
-    position:relative;
-    background:var(--card);
-    transition:transform 0.25s ease;
-    touch-action:pan-y;
-  }
-  .entry-swipe-wrap{
-    position:relative;
-    overflow:hidden;
-    border-top:1px solid var(--line);
-  }
-  .entry-delete-bg{
-    position:absolute;
-    inset:0;
-    background:var(--danger);
-    color:#fff;
-    display:flex;
-    align-items:center;
-    justify-content:flex-end;
-    padding-right:24px;
-    font-size:13px;
-    font-weight:600;
   }
   .entry-main{
     display:flex;
@@ -431,11 +329,13 @@
   }
   .tag.mola{background:var(--mola-soft); color:var(--mola);}
   .tag.is{background:var(--is-soft); color:var(--is);}
+  .tag.mesai{background:var(--mesai-soft); color:var(--mesai);}
   .entry .times{color:var(--ink); display:flex; align-items:center;}
   .entry .times .arrow{color:var(--muted); margin:0 6px;}
   .entry .dur{font-weight:600; font-variant-numeric:tabular-nums;}
   .entry .dur.mola{color:var(--mola);}
   .entry .dur.is{color:var(--is);}
+  .entry .dur.mesai{color:var(--mesai);}
   .entry .del{
     background:none;
     border:none;
@@ -459,9 +359,6 @@
     text-align:center;
     color:var(--muted);
     font-size:13px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
   }
   .action-row{
     display:flex;
@@ -615,47 +512,9 @@
     color:var(--muted);
     margin-top:5px;
   }
-
-  .mini-timer-bar{
-    position:fixed;
-    top:0;
-    left:0;
-    right:0;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:12px 18px;
-    color:#fff;
-    font-size:13px;
-    font-weight:600;
-    z-index:900;
-    transform:translateY(-100%);
-    transition:transform 0.25s ease;
-    box-shadow:0 4px 16px rgba(0,0,0,0.15);
-  }
-  .mini-timer-bar.show{transform:translateY(0);}
-  .mini-timer-bar.mola{background:var(--mola);}
-  .mini-timer-bar.is{background:var(--is);}
-  .mini-timer-bar .mtb-left{display:flex; align-items:center; gap:10px;}
-  .mini-timer-bar .mtb-clock{font-variant-numeric:tabular-nums; opacity:0.95;}
-  .mini-timer-bar button{
-    background:rgba(255,255,255,0.22);
-    color:#fff;
-    padding:7px 14px;
-    font-size:12px;
-    border-radius:8px;
-  }
 </style>
 </head>
 <body>
-<div class="mini-timer-bar" id="miniTimerBar">
-  <div class="mtb-left">
-    <span id="miniTimerLabel">Mola</span>
-    <span class="mtb-clock" id="miniTimerClock">00:00:00</span>
-  </div>
-  <button onclick="stopSession()">Bitir</button>
-</div>
-
 <div class="wrap">
   <div class="top-row">
     <div>
@@ -680,8 +539,9 @@
     <div id="idleButtons" class="btn-row">
       <button class="btn-mola" onclick="startSession('mola')">Molaya Başla</button>
       <button class="btn-is" onclick="startSession('is')">Dış Ziyaret</button>
+      <button class="btn-mesai" onclick="startSession('mesai')">Mesai</button>
     </div>
-    <div class="type-hint" id="typeHint">Dış Ziyaret: saha, firma ziyareti, rakip analizi gibi ofis dışı işler için</div>
+    <div class="type-hint" id="typeHint">Dış Ziyaret: saha, firma ziyareti, rakip analizi gibi ofis dışı işler için · Mesai: normal mesai saatleri dışında çalışılan süre için</div>
     <div id="activeButtons" style="display:none;">
       <input type="text" class="note-input" id="noteInput" placeholder="Not ekle (opsiyonel)" oninput="updateNote()">
       <button class="btn-stop" onclick="stopSession()">Bitir</button>
@@ -703,6 +563,10 @@
       <div class="num" id="periodIsTotal">0dk</div>
       <div class="label">Dış Ziyaret</div>
     </div>
+    <div class="stat mesai">
+      <div class="num" id="periodMesaiTotal">0dk</div>
+      <div class="label">Mesai</div>
+    </div>
     <div class="stat">
       <div class="num" id="periodCount">0</div>
       <div class="label">Kayıt</div>
@@ -710,45 +574,39 @@
   </div>
 
   <div class="settings-card">
-    <div class="collapsible-header" onclick="toggleCollapse('settingsBody', this)">
-      <span>Ayarlar</span>
-      <span class="chevron">▾</span>
+    <div class="settings-row">
+      <span>Günlük mola limiti (dakika)</span>
+      <input type="number" id="limitInput" min="0" step="5" onchange="updateLimit()">
     </div>
-    <div class="collapsible-body" id="settingsBody" style="display:none;">
-      <div class="settings-row">
-        <span>Günlük mola limiti (dakika)</span>
-        <input type="number" id="limitInput" min="0" step="5" onchange="updateLimit()">
-      </div>
-      <div class="settings-row">
-        <span>Tek mola uyarı süresi (dakika)</span>
-        <input type="number" id="alertInput" min="0" step="1" onchange="updateAlertMinutes()">
-      </div>
+    <div class="settings-row">
+      <span>Tek mola uyarı süresi (dakika)</span>
+      <input type="number" id="alertInput" min="0" step="1" onchange="updateAlertMinutes()">
     </div>
   </div>
 
   <div class="stats-card">
-    <div class="collapsible-header" onclick="toggleCollapse('statsBody', this)">
-      <span>İstatistikler (tüm zamanlar)</span>
-      <span class="chevron">▾</span>
+    <h3>İstatistikler</h3>
+    <div class="tabs" style="margin-bottom:14px;">
+      <button id="statsTabWeek" onclick="setStatsPeriod('week')">Bu Hafta</button>
+      <button id="statsTabMonth" onclick="setStatsPeriod('month')">Bu Ay</button>
+      <button id="statsTabAll" class="on" onclick="setStatsPeriod('all')">Tüm Zamanlar</button>
     </div>
-    <div class="collapsible-body" id="statsBody" style="display:none;">
-      <div class="stats-grid">
-        <div class="item">
-          <div class="num" id="statAvg">–</div>
-          <div class="label">Ortalama mola süresi</div>
-        </div>
-        <div class="item">
-          <div class="num" id="statMax">–</div>
-          <div class="label">En uzun mola</div>
-        </div>
-        <div class="item">
-          <div class="num" id="statBusyDay">–</div>
-          <div class="label">En yoğun gün</div>
-        </div>
-        <div class="item">
-          <div class="num" id="statTotalCount">0</div>
-          <div class="label">Toplam kayıt</div>
-        </div>
+    <div class="stats-grid">
+      <div class="item">
+        <div class="num" id="statAvg">–</div>
+        <div class="label">Ortalama mola süresi</div>
+      </div>
+      <div class="item">
+        <div class="num" id="statMax">–</div>
+        <div class="label">En uzun mola</div>
+      </div>
+      <div class="item">
+        <div class="num" id="statBusyDay">–</div>
+        <div class="label">En yoğun gün</div>
+      </div>
+      <div class="item">
+        <div class="num" id="statTotalCount">0</div>
+        <div class="label">Toplam kayıt</div>
       </div>
     </div>
   </div>
@@ -756,24 +614,16 @@
   <div class="chart-card">
     <div class="chart-header">
       <span>Günlük Özet</span>
-      <span class="trend-indicator" id="trendIndicator"></span>
-    </div>
-    <div class="chart-subheader">
-      <button class="nav-btn" onclick="navigateChart(1)">‹</button>
-      <span class="chart-period-label" id="chartPeriodLabel"></span>
-      <button class="nav-btn" id="navNextBtn" onclick="navigateChart(-1)">›</button>
-    </div>
-    <div class="chart-controls">
       <div class="toggles">
         <button id="range7" class="on" onclick="setRange(7)">7 gün</button>
         <button id="range30" onclick="setRange(30)">30 gün</button>
       </div>
     </div>
     <canvas id="chart" height="140"></canvas>
-    <div class="chart-tooltip" id="chartTooltip"></div>
     <div class="legend">
-      <span class="legend-item" id="legendMola" onclick="toggleLegendFilter('mola')"><i class="dot mola"></i>Mola</span>
-      <span class="legend-item" id="legendIs" onclick="toggleLegendFilter('is')"><i class="dot is"></i>Dış Ziyaret</span>
+      <span><i class="dot mola"></i>Mola</span>
+      <span><i class="dot is"></i>Dış Ziyaret</span>
+      <span><i class="dot mesai"></i>Mesai</span>
     </div>
   </div>
 
@@ -826,11 +676,8 @@ let dailyLimit = parseInt(localStorage.getItem(LIMIT_KEY) || '60', 10);
 let sessionAlertMinutes = parseInt(localStorage.getItem(ALERT_KEY) || '15', 10);
 let theme = localStorage.getItem(THEME_KEY) || 'light';
 let chartRange = 7;
-let chartBars = [];
-let chartOffset = 0;
-let hideMola = false;
-let hideIs = false;
 let currentPeriod = 'today';
+let statsPeriod = 'all';
 let tickInterval = null;
 let hasAlerted = false;
 let lastAlertTime = 0;
@@ -838,7 +685,8 @@ let audioCtx = null;
 let editingKey = null;
 let editingIdx = null;
 
-const TYPE_LABEL = {mola: 'Mola', is: 'Dış Ziyaret'};
+const TYPE_LABEL = {mola: 'Mola', is: 'Dış Ziyaret', mesai: 'Mesai'};
+const STOP_LABEL = {mola: 'Molayı Bitir', is: 'Dış Ziyareti Bitir', mesai: 'Mesaiyi Bitir'};
 const WEEKDAY_LABELS = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
 
 function todayKey(d = new Date()){
@@ -870,14 +718,6 @@ function applyTheme(){
   document.body.setAttribute('data-theme', theme);
   document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
 }
-function toggleCollapse(id, headerEl){
-  const body = document.getElementById(id);
-  const chevron = headerEl.querySelector('.chevron');
-  const isOpen = body.style.display !== 'none';
-  body.style.display = isOpen ? 'none' : 'block';
-  chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
-}
-
 function toggleTheme(){
   theme = theme === 'dark' ? 'light' : 'dark';
   applyTheme();
@@ -914,13 +754,8 @@ function playBeep(){
   });
 }
 
-function tapFeedback(){
-  if(navigator.vibrate) navigator.vibrate(10);
-}
-
 function startSession(type){
   if(activeSession) return;
-  tapFeedback();
   ensureAudio();
   activeSession = {start: Date.now(), type, note: ''};
   hasAlerted = false;
@@ -939,7 +774,6 @@ function updateNote(){
 
 function stopSession(){
   if(!activeSession) return;
-  tapFeedback();
   const end = Date.now();
   const key = todayKey(new Date(activeSession.start));
   if(!data[key]) data[key] = [];
@@ -964,9 +798,7 @@ function stopTick(){
 function updateClock(){
   if(!activeSession) return;
   const elapsed = Date.now() - activeSession.start;
-  const formatted = fmtDuration(elapsed, true);
-  document.getElementById('clockDisplay').textContent = formatted;
-  document.getElementById('miniTimerClock').textContent = formatted;
+  document.getElementById('clockDisplay').textContent = fmtDuration(elapsed, true);
 }
 function checkAlert(){
   if(!activeSession || sessionAlertMinutes <= 0) return;
@@ -993,7 +825,6 @@ function updateButtonState(){
   const active = document.getElementById('activeButtons');
   const status = document.getElementById('statusText');
   const stopBtn = document.querySelector('.btn-stop');
-  const miniBar = document.getElementById('miniTimerBar');
   if(activeSession){
     idle.style.display = 'none';
     active.style.display = 'block';
@@ -1001,11 +832,8 @@ function updateButtonState(){
     document.getElementById('noteInput').value = activeSession.note || '';
     status.textContent = TYPE_LABEL[activeSession.type].toUpperCase() + ' DEVAM EDİYOR';
     status.className = 'status active-' + activeSession.type;
-    stopBtn.textContent = (activeSession.type === 'mola' ? 'Molayı Bitir' : 'Dış Ziyareti Bitir');
-    document.getElementById('miniTimerLabel').textContent = TYPE_LABEL[activeSession.type] + ' devam ediyor';
-    miniBar.className = 'mini-timer-bar ' + activeSession.type;
+    stopBtn.textContent = STOP_LABEL[activeSession.type] || 'Bitir';
     checkAlert();
-    updateMiniBarVisibility();
   } else {
     idle.style.display = 'flex';
     active.style.display = 'none';
@@ -1013,17 +841,6 @@ function updateButtonState(){
     status.textContent = 'AKTİF DEĞİL';
     status.className = 'status';
     document.getElementById('timerCard').classList.remove('alerting');
-    miniBar.classList.remove('show');
-  }
-}
-
-let timerCardVisible = true;
-function updateMiniBarVisibility(){
-  const miniBar = document.getElementById('miniTimerBar');
-  if(activeSession && !timerCardVisible){
-    miniBar.classList.add('show');
-  } else {
-    miniBar.classList.remove('show');
   }
 }
 
@@ -1050,73 +867,28 @@ function renderList(){
   const list = document.getElementById('entryList');
   list.innerHTML = '';
   if(entries.length === 0){
-    list.innerHTML = `
-      <div class="empty">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:8px; opacity:0.5;">
-          <circle cx="12" cy="12" r="9"/>
-          <path d="M12 7v5l3 3" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <div>Bu tarihte kayıt yok</div>
-      </div>`;
+    list.innerHTML = '<div class="empty">Bu tarihte kayıt yok</div>';
     return;
   }
   entries.forEach((e, idx)=>{
-    const originalIdx = entries.length - 1 - idx;
-    const wrap = document.createElement('div');
-    wrap.className = 'entry-swipe-wrap';
+    const div = document.createElement('div');
+    div.className = 'entry';
     const dur = e.end - e.start;
     const noteHtml = e.note ? `<div class="entry-note">${escapeHtml(e.note)}</div>` : '';
-    wrap.innerHTML = `
-      <div class="entry-delete-bg">Sil</div>
-      <div class="entry">
-        <div class="entry-main" onclick="editNote('${key}', ${originalIdx})">
-          <div class="times">
-            <span class="tag ${e.type}">${TYPE_LABEL[e.type]}</span>
-            ${fmtTime(new Date(e.start))}<span class="arrow">→</span>${fmtTime(new Date(e.end))}
-          </div>
-          <div class="row-right">
-            <span class="dur ${e.type}">${fmtDuration(dur)}</span>
-            <button class="del" onclick="event.stopPropagation(); deleteEntry('${key}', ${originalIdx})">✕</button>
-          </div>
+    div.innerHTML = `
+      <div class="entry-main" onclick="editNote('${key}', ${entries.length-1-idx})">
+        <div class="times">
+          <span class="tag ${e.type}">${TYPE_LABEL[e.type]}</span>
+          ${fmtTime(new Date(e.start))}<span class="arrow">→</span>${fmtTime(new Date(e.end))}
         </div>
-        ${noteHtml}
+        <div class="row-right">
+          <span class="dur ${e.type}">${fmtDuration(dur)}</span>
+          <button class="del" onclick="event.stopPropagation(); deleteEntry('${key}', ${entries.length-1-idx})">✕</button>
+        </div>
       </div>
+      ${noteHtml}
     `;
-    const entryEl = wrap.querySelector('.entry');
-    attachSwipeToDelete(entryEl, key, originalIdx);
-    list.appendChild(wrap);
-  });
-}
-
-function attachSwipeToDelete(el, key, originalIdx){
-  let startX = 0, currentX = 0, dragging = false;
-  const threshold = -90;
-
-  el.addEventListener('touchstart', (e)=>{
-    startX = e.touches[0].clientX;
-    dragging = true;
-    el.style.transition = 'none';
-  }, { passive: true });
-
-  el.addEventListener('touchmove', (e)=>{
-    if(!dragging) return;
-    currentX = e.touches[0].clientX - startX;
-    if(currentX > 0) currentX = 0;
-    if(currentX < -120) currentX = -120;
-    el.style.transform = `translateX(${currentX}px)`;
-  }, { passive: true });
-
-  el.addEventListener('touchend', ()=>{
-    if(!dragging) return;
-    dragging = false;
-    el.style.transition = 'transform 0.25s ease';
-    if(currentX <= threshold){
-      el.style.transform = 'translateX(-100%)';
-      setTimeout(()=> deleteEntry(key, originalIdx), 180);
-    } else {
-      el.style.transform = 'translateX(0)';
-    }
-    currentX = 0;
+    list.appendChild(div);
   });
 }
 
@@ -1228,17 +1000,19 @@ function getMonthStart(d){
 
 function sumRange(startDate){
   const now = new Date();
-  let molaMs=0, isMs=0, count=0;
+  let molaMs=0, isMs=0, mesaiMs=0, count=0;
   Object.keys(data).forEach(key=>{
     const kd = new Date(key + 'T00:00:00');
     if(kd >= startDate && kd <= now){
       data[key].forEach(e=>{
-        if(e.type==='mola') molaMs += (e.end-e.start); else isMs += (e.end-e.start);
+        if(e.type==='mola') molaMs += (e.end-e.start);
+        else if(e.type==='mesai') mesaiMs += (e.end-e.start);
+        else isMs += (e.end-e.start);
         count++;
       });
     }
   });
-  return {molaMs, isMs, count};
+  return {molaMs, isMs, mesaiMs, count};
 }
 
 function setPeriod(period){
@@ -1250,29 +1024,34 @@ function setPeriod(period){
 }
 
 function renderPeriodSummary(){
-  let molaMs=0, isMs=0, count=0;
+  let molaMs=0, isMs=0, mesaiMs=0, count=0;
   const now = new Date();
   if(currentPeriod === 'today'){
     const key = todayKey();
     const entries = data[key] || [];
     entries.forEach(e=>{
-      if(e.type==='mola') molaMs += (e.end-e.start); else isMs += (e.end-e.start);
+      if(e.type==='mola') molaMs += (e.end-e.start);
+      else if(e.type==='mesai') mesaiMs += (e.end-e.start);
+      else isMs += (e.end-e.start);
     });
     count = entries.length;
   } else if(currentPeriod === 'week'){
     const r = sumRange(getWeekStart(now));
-    molaMs = r.molaMs; isMs = r.isMs; count = r.count;
+    molaMs = r.molaMs; isMs = r.isMs; mesaiMs = r.mesaiMs; count = r.count;
   } else {
     const r = sumRange(getMonthStart(now));
-    molaMs = r.molaMs; isMs = r.isMs; count = r.count;
+    molaMs = r.molaMs; isMs = r.isMs; mesaiMs = r.mesaiMs; count = r.count;
   }
   if(activeSession){
     const liveMs = Date.now() - activeSession.start;
-    if(activeSession.type === 'mola') molaMs += liveMs; else isMs += liveMs;
+    if(activeSession.type === 'mola') molaMs += liveMs;
+    else if(activeSession.type === 'mesai') mesaiMs += liveMs;
+    else isMs += liveMs;
     count += 1;
   }
   document.getElementById('periodMolaTotal').textContent = fmtDuration(molaMs);
   document.getElementById('periodIsTotal').textContent = fmtDuration(isMs);
+  document.getElementById('periodMesaiTotal').textContent = fmtDuration(mesaiMs);
   document.getElementById('periodCount').textContent = count;
 
   // Günlük limit uyarısı her zaman bugüne göre
@@ -1304,21 +1083,39 @@ function renderPeriodSummary(){
     } else if(pct >= 70){
       fill.classList.add('warn');
     }
-    const remaining = Math.round(dailyLimit - molaMin);
-    const remainingText = remaining > 0
-      ? `Kalan molan ${remaining} dakika`
-      : `Kalan molan yok`;
-    label.textContent = `Bugün limitin %${Math.round(Math.min(pct,999))}'ini kullandın (${Math.round(molaMin)} / ${dailyLimit}dk) · ${remainingText}`;
+    label.textContent = `Bugün limitin %${Math.round(Math.min(pct,999))}'ini kullandın (${Math.round(molaMin)} / ${dailyLimit}dk)`;
   } else {
     progressWrap.style.display = 'none';
   }
 }
 
-function renderAllTimeStats(){
+function setStatsPeriod(period){
+  statsPeriod = period;
+  document.getElementById('statsTabWeek').className = period==='week' ? 'on' : '';
+  document.getElementById('statsTabMonth').className = period==='month' ? 'on' : '';
+  document.getElementById('statsTabAll').className = period==='all' ? 'on' : '';
+  renderAllTimeStats();
+}
+
+function getStatsEntries(){
+  const now = new Date();
+  let startDate = null;
+  if(statsPeriod === 'week') startDate = getWeekStart(now);
+  else if(statsPeriod === 'month') startDate = getMonthStart(now);
+
   let allEntries = [];
   Object.keys(data).forEach(key=>{
+    if(startDate){
+      const kd = new Date(key + 'T00:00:00');
+      if(kd < startDate || kd > now) return;
+    }
     data[key].forEach(e=> allEntries.push(e));
   });
+  return allEntries;
+}
+
+function renderAllTimeStats(){
+  let allEntries = getStatsEntries();
   const molaEntries = allEntries.filter(e=>e.type==='mola');
   document.getElementById('statTotalCount').textContent = allEntries.length;
 
@@ -1347,109 +1144,9 @@ function renderAllTimeStats(){
 
 function setRange(days){
   chartRange = days;
-  chartOffset = 0;
   document.getElementById('range7').className = days===7 ? 'on' : '';
   document.getElementById('range30').className = days===30 ? 'on' : '';
   drawChart();
-}
-
-function navigateChart(direction){
-  // direction: 1 = geri (daha eski), -1 = ileri (daha yeni)
-  const newOffset = chartOffset + direction;
-  if(newOffset < 0) return;
-  if(newOffset > 104) return;
-  chartOffset = newOffset;
-  drawChart();
-}
-
-function toggleLegendFilter(type){
-  if(type === 'mola'){ hideMola = !hideMola; }
-  else { hideIs = !hideIs; }
-  document.getElementById('legendMola').className = 'legend-item' + (hideMola ? ' hidden' : '');
-  document.getElementById('legendIs').className = 'legend-item' + (hideIs ? ' hidden' : '');
-  drawChart();
-}
-
-function getPeriodDays(range, offset){
-  const days = [];
-  const now = new Date();
-  if(range === 7){
-    const monday = getWeekStart(now);
-    monday.setDate(monday.getDate() - offset*7);
-    for(let i=0;i<7;i++){
-      const d = new Date(monday);
-      d.setDate(monday.getDate()+i);
-      days.push(todayKey(d));
-    }
-  } else {
-    const end = new Date(now);
-    end.setDate(end.getDate() - offset*30);
-    for(let i=29;i>=0;i--){
-      const d = new Date(end);
-      d.setDate(d.getDate()-i);
-      days.push(todayKey(d));
-    }
-  }
-  return days;
-}
-
-function computeDayTotals(days){
-  const molaMins = [], isMins = [];
-  days.forEach(k=>{
-    const entries = data[k] || [];
-    let m=0, s=0;
-    entries.forEach(e=>{
-      const min = (e.end - e.start)/60000;
-      if(e.type==='mola') m+=min; else s+=min;
-    });
-    molaMins.push(m); isMins.push(s);
-  });
-  return { molaMins, isMins };
-}
-
-function formatPeriodLabel(days){
-  const start = new Date(days[0] + 'T00:00:00');
-  const end = new Date(days[days.length-1] + 'T00:00:00');
-  const opts = { day:'numeric', month:'short' };
-  return start.toLocaleDateString('tr-TR', opts) + ' – ' + end.toLocaleDateString('tr-TR', opts);
-}
-
-function handleChartTap(clientX){
-  const canvas = document.getElementById('chart');
-  const rect = canvas.getBoundingClientRect();
-  const x = clientX - rect.left;
-  const bar = chartBars.find(b => x >= b.x && x <= b.x + b.width);
-  const tooltip = document.getElementById('chartTooltip');
-  if(!bar){
-    tooltip.classList.remove('show');
-    return;
-  }
-  const d = new Date(bar.key + 'T00:00:00');
-  const dateLabel = d.toLocaleDateString('tr-TR', { day:'numeric', month:'long', weekday:'long' });
-  tooltip.innerHTML = `<strong>${dateLabel}</strong><br><span class="tt-mola">Mola: ${Math.round(bar.molaMin)}dk</span><br><span class="tt-is">Dış Ziyaret: ${Math.round(bar.isMin)}dk</span>`;
-  tooltip.style.left = '0px';
-  tooltip.style.top = '10px';
-  tooltip.classList.add('show');
-
-  const card = canvas.parentElement;
-  const cardWidth = card.clientWidth;
-  const tooltipWidth = tooltip.offsetWidth;
-  const rawCenter = canvas.offsetLeft + bar.x + bar.width/2;
-  const minCenter = tooltipWidth/2 + 4;
-  const maxCenter = cardWidth - tooltipWidth/2 - 4;
-  const clampedCenter = Math.max(minCenter, Math.min(maxCenter, rawCenter));
-  tooltip.style.left = clampedCenter + 'px';
-
-  clearTimeout(window._chartTooltipTimeout);
-  window._chartTooltipTimeout = setTimeout(()=> tooltip.classList.remove('show'), 3000);
-}
-
-function setupChartInteraction(){
-  const canvas = document.getElementById('chart');
-  canvas.addEventListener('click', (e)=> handleChartTap(e.clientX));
-  canvas.addEventListener('touchstart', (e)=>{
-    if(e.touches[0]) handleChartTap(e.touches[0].clientX);
-  }, { passive: true });
 }
 
 function drawChart(){
@@ -1465,83 +1162,66 @@ function drawChart(){
   ctx.scale(dpr, dpr);
   ctx.clearRect(0,0,cssWidth,cssHeight);
 
-  const days = getPeriodDays(chartRange, chartOffset);
-  const { molaMins, isMins } = computeDayTotals(days);
+  const days = [];
   const now = new Date();
+  if(chartRange === 7){
+    const monday = getWeekStart(now);
+    for(let i = 0; i < 7; i++){
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      days.push(todayKey(d));
+    }
+  } else {
+    for(let i = chartRange - 1; i >= 0; i--){
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      days.push(todayKey(d));
+    }
+  }
 
-  // Görünen (filtrelenmiş) toplamlar
-  const visTotals = days.map((_,i)=> (hideMola?0:molaMins[i]) + (hideIs?0:isMins[i]));
+  const molaMins = [], isMins = [], mesaiMins = [];
+  days.forEach(k=>{
+    const entries = data[k] || [];
+    let m=0, s=0, mz=0;
+    entries.forEach(e=>{
+      const min = (e.end - e.start)/60000;
+      if(e.type==='mola') m+=min;
+      else if(e.type==='mesai') mz+=min;
+      else s+=min;
+    });
+    molaMins.push(m); isMins.push(s); mesaiMins.push(mz);
+  });
 
-  // Önceki eşit uzunluktaki dönem (karşılaştırma ve trend için)
-  const prevDays = getPeriodDays(chartRange, chartOffset+1);
-  const prevSums = computeDayTotals(prevDays);
-  const prevVisTotals = prevDays.map((_,i)=> (hideMola?0:prevSums.molaMins[i]) + (hideIs?0:prevSums.isMins[i]));
-
-  let maxVal = Math.max(10, ...visTotals);
-
+  const maxVal = Math.max(10, ...days.map((_,i)=>molaMins[i]+isMins[i]+mesaiMins[i]));
   const chartH = cssHeight - 24;
   const barGap = chartRange === 30 ? 2 : 8;
   const barW = (cssWidth / days.length) - barGap;
   const molaColor = getComputedStyle(document.body).getPropertyValue('--mola').trim() || '#2f6f4f';
   const isColor = getComputedStyle(document.body).getPropertyValue('--is').trim() || '#2f5f8f';
+  const mesaiColor = getComputedStyle(document.body).getPropertyValue('--mesai').trim() || '#a5691e';
   const mutedColor = getComputedStyle(document.body).getPropertyValue('--muted').trim() || '#8a8a85';
-
-  chartBars = [];
 
   days.forEach((k, i)=>{
     const x = i * (barW + barGap) + barGap/2;
-
-    const mH = (hideMola ? 0 : molaMins[i]/maxVal * chartH);
-    const sH = (hideIs ? 0 : isMins[i]/maxVal * chartH);
+    const mH = (molaMins[i]/maxVal) * chartH;
+    const sH = (isMins[i]/maxVal) * chartH;
+    const zH = (mesaiMins[i]/maxVal) * chartH;
     ctx.fillStyle = molaColor;
     ctx.fillRect(x, chartH - mH, barW, mH);
     ctx.fillStyle = isColor;
     ctx.fillRect(x, chartH - mH - sH, barW, sH);
-
-    chartBars.push({ x, width: barW, key: k, molaMin: molaMins[i], isMin: isMins[i] });
+    ctx.fillStyle = mesaiColor;
+    ctx.fillRect(x, chartH - mH - sH - zH, barW, zH);
 
     if(chartRange === 7){
       ctx.fillStyle = mutedColor;
       ctx.font = '10px sans-serif';
       ctx.textAlign = 'center';
-      const d = new Date(k + 'T00:00:00');
+      const d = new Date(k);
       const label = d.toLocaleDateString('tr-TR', {weekday:'short'});
       ctx.fillText(label, x + barW/2, cssHeight - 6);
-    } else if(chartRange === 30){
-      const showLabel = (i % 5 === 0) || (i === days.length - 1);
-      if(showLabel){
-        ctx.fillStyle = mutedColor;
-        ctx.font = '9px sans-serif';
-        ctx.textAlign = 'center';
-        const d = new Date(k + 'T00:00:00');
-        ctx.fillText(String(d.getDate()), x + barW/2, cssHeight - 6);
-      }
     }
   });
-
-  // Üst navigasyon/etiket ve trend
-  document.getElementById('chartPeriodLabel').textContent = formatPeriodLabel(days);
-  document.getElementById('navNextBtn').disabled = (chartOffset === 0);
-
-  const currentTotal = visTotals.reduce((a,b)=>a+b,0);
-  const prevTotal = prevVisTotals.reduce((a,b)=>a+b,0);
-  const trendEl = document.getElementById('trendIndicator');
-  if(prevTotal > 0){
-    const pct = Math.round(((currentTotal - prevTotal) / prevTotal) * 100);
-    if(pct === 0){
-      trendEl.textContent = '= %0';
-      trendEl.className = 'trend-indicator';
-    } else if(pct > 0){
-      trendEl.textContent = '▲ %' + pct;
-      trendEl.className = 'trend-indicator up';
-    } else {
-      trendEl.textContent = '▼ %' + Math.abs(pct);
-      trendEl.className = 'trend-indicator down';
-    }
-  } else {
-    trendEl.textContent = '';
-    trendEl.className = 'trend-indicator';
-  }
 }
 
 let xlsxLoadPromise = null;
@@ -1655,15 +1335,6 @@ if(activeSession){
 }
 renderAll();
 window.addEventListener('resize', drawChart);
-setupChartInteraction();
-
-if('IntersectionObserver' in window){
-  const timerObserver = new IntersectionObserver((entries)=>{
-    timerCardVisible = entries[0].isIntersecting;
-    updateMiniBarVisibility();
-  }, { threshold: 0 });
-  timerObserver.observe(document.getElementById('timerCard'));
-}
 
 // Kısayoldan (widget benzeri) gelen otomatik başlatma
 (function(){
