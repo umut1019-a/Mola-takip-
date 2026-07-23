@@ -237,6 +237,27 @@
     color:var(--muted);
     margin:0 0 12px;
   }
+
+  .section-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    cursor:pointer;
+    user-select:none;
+  }
+  .title-toggle{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .chevron{
+    font-size:10px;
+    color:var(--muted);
+    display:inline-block;
+  }
+  .collapsed{display:none;}
   .stats-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -280,7 +301,43 @@
   .dot.mola{background:var(--mola);}
   .dot.is{background:var(--is);}
   .dot.mesai{background:var(--mesai);}
-  canvas{width:100%; display:block;}
+  canvas{width:100%; display:block; cursor:pointer;}
+  .chart-hint{
+    text-align:center;
+    font-size:10px;
+    color:var(--muted);
+    margin-top:6px;
+  }
+  .chart-detail{
+    margin-top:12px;
+    padding:12px 14px;
+    border-radius:12px;
+    background:var(--bg);
+    border:1px solid var(--line);
+  }
+  .chart-detail .chart-detail-date{
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink);
+    margin-bottom:8px;
+  }
+  .chart-detail-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    color:var(--muted);
+    padding:3px 0;
+  }
+  .chart-detail-row b{
+    color:var(--ink);
+    margin-left:auto;
+    font-variant-numeric:tabular-nums;
+  }
+  .chart-detail-empty{
+    font-size:12px;
+    color:var(--muted);
+  }
 
   .list-card{
     background:var(--card);
@@ -574,62 +631,77 @@
   </div>
 
   <div class="settings-card">
-    <div class="settings-row">
-      <span>Günlük mola limiti (dakika)</span>
-      <input type="number" id="limitInput" min="0" step="5" onchange="updateLimit()">
-    </div>
-    <div class="settings-row">
-      <span>Tek mola uyarı süresi (dakika)</span>
-      <input type="number" id="alertInput" min="0" step="1" onchange="updateAlertMinutes()">
+    <h3 class="section-title" onclick="toggleSection('settingsBody')">
+      <span>Ayarlar</span>
+      <span class="chevron" id="settingsBodyChevron">▾</span>
+    </h3>
+    <div id="settingsBody">
+      <div class="settings-row">
+        <span>Günlük mola limiti (dakika)</span>
+        <input type="number" id="limitInput" min="0" step="5" onchange="updateLimit()">
+      </div>
+      <div class="settings-row">
+        <span>Tek mola uyarı süresi (dakika)</span>
+        <input type="number" id="alertInput" min="0" step="1" onchange="updateAlertMinutes()">
+      </div>
     </div>
   </div>
 
   <div class="stats-card">
-    <h3>İstatistikler</h3>
-    <div class="tabs" style="margin-bottom:14px;">
-      <button id="statsTabWeek" onclick="setStatsPeriod('week')">Bu Hafta</button>
-      <button id="statsTabMonth" onclick="setStatsPeriod('month')">Bu Ay</button>
-      <button id="statsTabAll" class="on" onclick="setStatsPeriod('all')">Tüm Zamanlar</button>
-    </div>
-    <div class="stats-grid">
-      <div class="item">
-        <div class="num" id="statAvg">–</div>
-        <div class="label">Ortalama mola süresi</div>
+    <h3 class="section-title" onclick="toggleSection('statsBody')">
+      <span>İstatistikler</span>
+      <span class="chevron" id="statsBodyChevron">▾</span>
+    </h3>
+    <div id="statsBody">
+      <div class="tabs" style="margin-bottom:14px;">
+        <button id="statsTabWeek" onclick="setStatsPeriod('week')">Bu Hafta</button>
+        <button id="statsTabMonth" onclick="setStatsPeriod('month')">Bu Ay</button>
+        <button id="statsTabAll" class="on" onclick="setStatsPeriod('all')">Tüm Zamanlar</button>
       </div>
-      <div class="item">
-        <div class="num" id="statMax">–</div>
-        <div class="label">En uzun mola</div>
-      </div>
-      <div class="item">
-        <div class="num" id="statBusyDay">–</div>
-        <div class="label">En yoğun gün</div>
-      </div>
-      <div class="item">
-        <div class="num" id="statTotalCount">0</div>
-        <div class="label">Toplam kayıt</div>
+      <div class="stats-grid">
+        <div class="item">
+          <div class="num" id="statAvg">–</div>
+          <div class="label">Ortalama mola süresi</div>
+        </div>
+        <div class="item">
+          <div class="num" id="statMax">–</div>
+          <div class="label">En uzun mola</div>
+        </div>
+        <div class="item">
+          <div class="num" id="statBusyDay">–</div>
+          <div class="label">En yoğun gün</div>
+        </div>
+        <div class="item">
+          <div class="num" id="statTotalCount">0</div>
+          <div class="label">Toplam kayıt</div>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="chart-card">
     <div class="chart-header">
-      <span>Günlük Özet</span>
+      <span class="title-toggle" onclick="toggleSection('chartBody')">Günlük Özet <span class="chevron" id="chartBodyChevron">▾</span></span>
       <div class="toggles">
         <button id="range7" class="on" onclick="setRange(7)">7 gün</button>
         <button id="range30" onclick="setRange(30)">30 gün</button>
       </div>
     </div>
-    <canvas id="chart" height="140"></canvas>
-    <div class="legend">
-      <span><i class="dot mola"></i>Mola</span>
-      <span><i class="dot is"></i>Dış Ziyaret</span>
-      <span><i class="dot mesai"></i>Mesai</span>
+    <div id="chartBody">
+      <canvas id="chart" height="140"></canvas>
+      <div class="legend">
+        <span><i class="dot mola"></i>Mola</span>
+        <span><i class="dot is"></i>Dış Ziyaret</span>
+        <span><i class="dot mesai"></i>Mesai</span>
+      </div>
+      <div class="chart-hint">Detayını görmek için bir çubuğa dokun</div>
+      <div class="chart-detail" id="chartDetail" style="display:none;"></div>
     </div>
   </div>
 
   <div class="list-card">
     <div class="list-header">
-      <span>Kayıt Geçmişi</span>
+      <span class="title-toggle" onclick="toggleSection('entryList')">Kayıt Geçmişi <span class="chevron" id="entryListChevron">▾</span></span>
       <select id="dateSelect" onchange="renderList()"></select>
     </div>
     <div id="entryList"></div>
@@ -1142,6 +1214,16 @@ function renderAllTimeStats(){
   document.getElementById('statBusyDay').textContent = dayTotals[maxDay] > 0 ? WEEKDAY_LABELS[maxDay] : '–';
 }
 
+function toggleSection(id){
+  const body = document.getElementById(id);
+  const chevron = document.getElementById(id + 'Chevron');
+  const collapsed = body.classList.toggle('collapsed');
+  if(chevron) chevron.textContent = collapsed ? '▸' : '▾';
+  if(id === 'chartBody' && !collapsed){
+    drawChart();
+  }
+}
+
 function setRange(days){
   chartRange = days;
   document.getElementById('range7').className = days===7 ? 'on' : '';
@@ -1149,8 +1231,13 @@ function setRange(days){
   drawChart();
 }
 
+let chartClickState = {days:[], molaMins:[], isMins:[], mesaiMins:[], barW:0, barGap:0};
+
 function drawChart(){
   const canvas = document.getElementById('chart');
+  const chartBodyEl = document.getElementById('chartBody');
+  if(chartBodyEl && chartBodyEl.classList.contains('collapsed')) return;
+  document.getElementById('chartDetail').style.display = 'none';
   const dpr = window.devicePixelRatio || 1;
   const cssWidth = canvas.parentElement.clientWidth - 40;
   const cssHeight = 140;
@@ -1196,6 +1283,7 @@ function drawChart(){
   const chartH = cssHeight - 24;
   const barGap = chartRange === 30 ? 2 : 8;
   const barW = (cssWidth / days.length) - barGap;
+  chartClickState = {days, molaMins, isMins, mesaiMins, barW, barGap};
   const molaColor = getComputedStyle(document.body).getPropertyValue('--mola').trim() || '#2f6f4f';
   const isColor = getComputedStyle(document.body).getPropertyValue('--is').trim() || '#2f5f8f';
   const mesaiColor = getComputedStyle(document.body).getPropertyValue('--mesai').trim() || '#a5691e';
@@ -1222,6 +1310,37 @@ function drawChart(){
       ctx.fillText(label, x + barW/2, cssHeight - 6);
     }
   });
+}
+
+function onChartClick(e){
+  const {days, molaMins, isMins, mesaiMins, barW, barGap} = chartClickState;
+  if(!days.length) return;
+  const canvas = e.currentTarget;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const idx = Math.floor(x / (barW + barGap));
+  if(idx < 0 || idx >= days.length) return;
+  showChartDetail(idx);
+}
+
+function showChartDetail(idx){
+  const {days, molaMins, isMins, mesaiMins} = chartClickState;
+  const key = days[idx];
+  const d = new Date(key + 'T00:00:00');
+  const dateLabel = d.toLocaleDateString('tr-TR', {day:'numeric', month:'long', year:'numeric', weekday:'long'});
+  const m = molaMins[idx], s = isMins[idx], z = mesaiMins[idx];
+  const detail = document.getElementById('chartDetail');
+  if(m+s+z === 0){
+    detail.innerHTML = `<div class="chart-detail-date">${dateLabel}</div><div class="chart-detail-empty">Bu gün kayıt yok</div>`;
+  } else {
+    detail.innerHTML = `
+      <div class="chart-detail-date">${dateLabel}</div>
+      <div class="chart-detail-row"><span class="dot mola"></span>Mola <b>${fmtDuration(m*60000)}</b></div>
+      <div class="chart-detail-row"><span class="dot is"></span>Dış Ziyaret <b>${fmtDuration(s*60000)}</b></div>
+      <div class="chart-detail-row"><span class="dot mesai"></span>Mesai <b>${fmtDuration(z*60000)}</b></div>
+    `;
+  }
+  detail.style.display = 'block';
 }
 
 let xlsxLoadPromise = null;
@@ -1335,6 +1454,7 @@ if(activeSession){
 }
 renderAll();
 window.addEventListener('resize', drawChart);
+document.getElementById('chart').addEventListener('click', onChartClick);
 
 // Kısayoldan (widget benzeri) gelen otomatik başlatma
 (function(){
