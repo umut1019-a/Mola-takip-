@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mola & Dış Ziyaret Takip</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f6f4f">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#fafaf9;
+    --card:#ffffff;
+    --ink:#1c1c1a;
+    --muted:#8a8a85;
+    --line:#eceae6;
+    --mola:#2f6f4f;
+    --mola-soft:#e7f2ec;
+    --is:#2f5f8f;
+    --is-soft:#e6eef6;
+    --mesai:#a5691e;
+    --mesai-soft:#f5e9d8;
+    --danger:#b5482f;
+    --danger-soft:#fbe9e4;
+    --input-bg:#fafaf9;
+  }
+  [data-theme="dark"]{
+    --bg:#15140f;
+    --card:#201f1a;
+    --ink:#f2f1ec;
+    --muted:#928f85;
+    --line:#332f27;
+    --mola:#5fae83;
+    --mola-soft:#1e2e26;
+    --is:#6fa3d8;
+    --is-soft:#1c2733;
+    --mesai:#d9a35a;
+    --mesai-soft:#3a2c19;
+    --danger:#e08063;
+    --danger-soft:#3a241d;
+    --input-bg:#15140f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:32px 16px 60px;
+    min-height:100vh;
+    transition:background .2s ease, color .2s ease;
+  }
+  .wrap{width:100%; max-width:520px;}
+  .top-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:4px;
+  }
+  h1{
+    font-size:20px;
+    font-weight:600;
+    margin:0 0 4px;
+    letter-spacing:-0.2px;
+  }
+  .sub{color:var(--muted); font-size:13px; margin-bottom:24px;}
+  .theme-btn{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    width:38px;
+    height:38px;
+    font-size:16px;
+    padding:0;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .banner{
+    background:var(--danger-soft);
+    color:var(--danger);
+    border-radius:12px;
+    padding:12px 16px;
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:16px;
+    display:none;
+    align-items:center;
+    gap:8px;
+  }
+  .banner.show{display:flex;}
+
+  .timer-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:32px 24px;
+    text-align:center;
+    margin-bottom:20px;
+    transition:box-shadow .2s ease;
+  }
+  .timer-card.alerting{
+    box-shadow:0 0 0 3px var(--danger);
+  }
+  .status{
+    font-size:12px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:12px;
+  }
+  .status.active-mola{color:var(--mola);}
+  .status.active-is{color:var(--is);}
+  .status.active-mesai{color:var(--mesai);}
+  .clock{
+    font-size:44px;
+    font-weight:300;
+    font-variant-numeric:tabular-nums;
+    margin-bottom:20px;
+    letter-spacing:1px;
+  }
+  .note-input{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:13px;
+    margin-bottom:16px;
+    background:var(--input-bg);
+    color:var(--ink);
+    font-family:inherit;
+  }
+  .type-hint{
+    font-size:11px;
+    color:var(--muted);
+    margin-top:14px;
+    line-height:1.4;
+  }
+  button{
+    border:none;
+    border-radius:12px;
+    padding:14px 24px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    transition:opacity .15s ease, transform .1s ease;
+    font-family:inherit;
+  }
+  button:active{transform:scale(0.97);}
+  .btn-row{display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
+  .btn-mola{background:var(--mola); color:#fff;}
+  .btn-is{background:var(--is); color:#fff;}
+  .btn-mesai{background:var(--mesai); color:#fff;}
+  .btn-stop{background:var(--danger); color:#fff; width:100%; padding:14px 32px;}
+
+  .tabs{
+    display:flex;
+    gap:6px;
+    margin-bottom:10px;
+  }
+  .tabs button{
+    flex:1;
+    background:var(--card);
+    border:1px solid var(--line);
+    color:var(--muted);
+    padding:9px;
+    font-size:12px;
+    border-radius:10px;
+  }
+  .tabs button.on{
+    background:var(--ink);
+    color:var(--bg);
+    border-color:var(--ink);
+  }
+
+  .summary{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .stat{
+    flex:1 1 calc(50% - 5px);
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 10px;
+    text-align:center;
+  }
+  .stat .num{font-size:19px; font-weight:600;}
+  .stat .label{font-size:11px; color:var(--muted); margin-top:2px;}
+  .stat.mola .num{color:var(--mola);}
+  .stat.is .num{color:var(--is);}
+  .stat.mesai .num{color:var(--mesai);}
+
+  .settings-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:16px;
+  }
+  .settings-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:13px;
+    padding:6px 0;
+  }
+  .settings-row + .settings-row{border-top:1px solid var(--line);}
+  .settings-row input{
+    width:60px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:6px 8px;
+    font-size:13px;
+    text-align:center;
+    background:var(--input-bg);
+    color:var(--ink);
+  }
+
+  .stats-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px 20px;
+    margin-bottom:16px;
+  }
+  .stats-card h3{
+    font-size:13px;
+    font-weight:600;
+    color:var(--muted);
+    margin:0 0 12px;
+  }
+
+  .section-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    cursor:pointer;
+    user-select:none;
+  }
+  .title-toggle{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .chevron{
+    font-size:10px;
+    color:var(--muted);
+    display:inline-block;
+  }
+  .collapsed{display:none;}
+  .stats-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+  .stats-grid .item .num{font-size:17px; font-weight:600;}
+  .stats-grid .item .label{font-size:11px; color:var(--muted); margin-top:2px;}
+
+  .chart-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:18px 20px;
+    margin-bottom:16px;
+  }
+  .chart-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+  }
+  .chart-header span{font-size:13px; font-weight:600; color:var(--muted);}
+  .chart-header .toggles{display:flex; gap:6px;}
+  .chart-header .toggles button{
+    padding:5px 10px;
+    font-size:11px;
+    border-radius:8px;
+    background:var(--bg);
+    color:var(--muted);
+    border:1px solid var(--line);
+    font-weight:600;
+  }
+  .chart-header .toggles button.on{
+    background:var(--ink);
+    color:var(--bg);
+    border-color:var(--ink);
+  }
+  .legend{display:flex; gap:14px; font-size:11px; color:var(--muted); margin-top:8px;}
+  .legend span{display:flex; align-items:center; gap:5px;}
+  .dot{width:8px; height:8px; border-radius:2px; display:inline-block;}
+  .dot.mola{background:var(--mola);}
+  .dot.is{background:var(--is);}
+  .dot.mesai{background:var(--mesai);}
+  canvas{width:100%; display:block; cursor:pointer;}
+  .chart-hint{
+    text-align:center;
+    font-size:10px;
+    color:var(--muted);
+    margin-top:6px;
+  }
+  .chart-detail{
+    margin-top:12px;
+    padding:12px 14px;
+    border-radius:12px;
+    background:var(--bg);
+    border:1px solid var(--line);
+  }
+  .chart-detail .chart-detail-date{
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink);
+    margin-bottom:8px;
+  }
+  .chart-detail-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    color:var(--muted);
+    padding:3px 0;
+  }
+  .chart-detail-row b{
+    color:var(--ink);
+    margin-left:auto;
+    font-variant-numeric:tabular-nums;
+  }
+  .chart-detail-empty{
+    font-size:12px;
+    color:var(--muted);
+  }
+
+  .list-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    overflow:hidden;
+    margin-bottom:16px;
+  }
+  .list-header{
+    padding:16px 20px 10px;
+    font-size:13px;
+    font-weight:600;
+    color:var(--muted);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+  }
+  .list-header select{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:5px 8px;
+    font-size:12px;
+    background:var(--input-bg);
+    color:var(--ink);
+  }
+  .entry{
+    padding:12px 20px;
+    border-top:1px solid var(--line);
+    font-size:14px;
+    cursor:pointer;
+  }
+  .entry-main{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .tag{
+    font-size:10px;
+    font-weight:700;
+    padding:3px 7px;
+    border-radius:6px;
+    text-transform:uppercase;
+    letter-spacing:0.3px;
+    margin-right:10px;
+  }
+  .tag.mola{background:var(--mola-soft); color:var(--mola);}
+  .tag.is{background:var(--is-soft); color:var(--is);}
+  .tag.mesai{background:var(--mesai-soft); color:var(--mesai);}
+  .entry .times{color:var(--ink); display:flex; align-items:center;}
+  .entry .times .arrow{color:var(--muted); margin:0 6px;}
+  .entry .dur{font-weight:600; font-variant-numeric:tabular-nums;}
+  .entry .dur.mola{color:var(--mola);}
+  .entry .dur.is{color:var(--is);}
+  .entry .dur.mesai{color:var(--mesai);}
+  .entry .del{
+    background:none;
+    border:none;
+    color:var(--muted);
+    font-size:16px;
+    padding:2px 6px;
+    cursor:pointer;
+    margin-left:8px;
+  }
+  .entry .del:hover{color:var(--danger);}
+  .row-right{display:flex; align-items:center;}
+  .entry-note{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:6px;
+    padding-left:2px;
+    font-style:italic;
+  }
+  .empty{
+    padding:28px 20px;
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+  }
+  .action-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .export-btn{
+    flex:1;
+    background:var(--ink);
+    color:var(--bg);
+    padding:13px;
+    border-radius:12px;
+    font-size:13px;
+  }
+  .backup-btn{
+    flex:1;
+    background:var(--card);
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:13px;
+    border-radius:12px;
+    font-size:13px;
+  }
+  .footer-note{
+    text-align:center;
+    color:var(--muted);
+    font-size:11px;
+    margin-top:18px;
+  }
+
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.5);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:1000;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-box{
+    background:var(--card);
+    border-radius:16px;
+    padding:20px;
+    width:100%;
+    max-width:400px;
+    box-shadow:0 12px 40px rgba(0,0,0,0.35);
+  }
+  .modal-title{
+    font-size:15px;
+    font-weight:600;
+    color:var(--ink);
+    margin-bottom:14px;
+  }
+  .modal-textarea{
+    width:100%;
+    min-height:90px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:13px;
+    font-family:inherit;
+    background:var(--input-bg);
+    color:var(--ink);
+    resize:vertical;
+    margin-bottom:16px;
+  }
+  .modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+  }
+  .modal-btn{
+    padding:10px 18px;
+    font-size:13px;
+    border-radius:10px;
+  }
+  .modal-btn.cancel{
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--muted);
+  }
+  .modal-btn.save{
+    background:var(--mola);
+    color:#fff;
+  }
+
+  .undo-toast{
+    position:fixed;
+    left:50%;
+    bottom:24px;
+    transform:translate(-50%, 16px);
+    background:#2a2a2a;
+    color:#fff;
+    padding:12px 14px 12px 18px;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    font-size:13px;
+    box-shadow:0 8px 28px rgba(0,0,0,0.3);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.2s ease, transform 0.2s ease;
+    z-index:1100;
+    max-width:calc(100% - 40px);
+  }
+  .undo-toast.show{
+    opacity:1;
+    transform:translate(-50%, 0);
+    pointer-events:auto;
+  }
+  .undo-toast button{
+    background:none;
+    border:none;
+    color:#7fd0ff;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:0.3px;
+    padding:4px 6px;
+  }
+
+  .limit-progress-wrap{
+    margin-bottom:14px;
+  }
+  .limit-progress-track{
+    width:100%;
+    height:10px;
+    border-radius:6px;
+    background:var(--line);
+    overflow:hidden;
+  }
+  .limit-progress-fill{
+    height:100%;
+    width:0%;
+    border-radius:6px;
+    background:#3fa96a;
+    transition:width 0.4s ease, background 0.4s ease;
+  }
+  .limit-progress-fill.warn{
+    background:#e0a83c;
+  }
+  .limit-progress-fill.danger{
+    background:#d9534f;
+  }
+  .limit-progress-label{
+    display:flex;
+    justify-content:space-between;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top-row">
+    <div>
+      <h1>Mola & Dış Ziyaret Takip</h1>
+      <div class="sub">Mola ve dış ziyaret sürelerini ayrı ayrı kaydet</div>
+    </div>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+  </div>
+
+  <div class="banner" id="limitBanner"></div>
+
+  <div class="limit-progress-wrap" id="limitProgressWrap">
+    <div class="limit-progress-track">
+      <div class="limit-progress-fill" id="limitProgressFill"></div>
+    </div>
+    <div class="limit-progress-label" id="limitProgressLabel"></div>
+  </div>
+
+  <div class="timer-card" id="timerCard">
+    <div class="status" id="statusText">AKTİF DEĞİL</div>
+    <div class="clock" id="clockDisplay">00:00:00</div>
+    <div id="idleButtons" class="btn-row">
+      <button class="btn-mola" onclick="startSession('mola')">Molaya Başla</button>
+      <button class="btn-is" onclick="startSession('is')">Dış Ziyaret</button>
+      <button class="btn-mesai" onclick="startSession('mesai')">Mesai</button>
+    </div>
+    <div class="type-hint" id="typeHint">Dış Ziyaret: saha, firma ziyareti, rakip analizi gibi ofis dışı işler için · Mesai: normal mesai saatleri dışında çalışılan süre için</div>
+    <div id="activeButtons" style="display:none;">
+      <input type="text" class="note-input" id="noteInput" placeholder="Not ekle (opsiyonel)" oninput="updateNote()">
+      <button class="btn-stop" onclick="stopSession()">Bitir</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button id="tabToday" class="on" onclick="setPeriod('today')">Bugün</button>
+    <button id="tabWeek" onclick="setPeriod('week')">Bu Hafta</button>
+    <button id="tabMonth" onclick="setPeriod('month')">Bu Ay</button>
+  </div>
+
+  <div class="summary">
+    <div class="stat mola">
+      <div class="num" id="periodMolaTotal">0dk</div>
+      <div class="label">Mola</div>
+    </div>
+    <div class="stat is">
+      <div class="num" id="periodIsTotal">0dk</div>
+      <div class="label">Dış Ziyaret</div>
+    </div>
+    <div class="stat mesai">
+      <div class="num" id="periodMesaiTotal">0dk</div>
+      <div class="label">Mesai</div>
+    </div>
+    <div class="stat">
+      <div class="num" id="periodCount">0</div>
+      <div class="label">Kayıt</div>
+    </div>
+  </div>
+
+  <div class="settings-card">
+    <h3 class="section-title" onclick="toggleSection('settingsBody')">
+      <span>Ayarlar</span>
+      <span class="chevron" id="settingsBodyChevron">▾</span>
+    </h3>
+    <div id="settingsBody">
+      <div class="settings-row">
+        <span>Günlük mola limiti (dakika)</span>
+        <input type="number" id="limitInput" min="0" step="5" onchange="updateLimit()">
+      </div>
+      <div class="settings-row">
+        <span>Tek mola uyarı süresi (dakika)</span>
+        <input type="number" id="alertInput" min="0" step="1" onchange="updateAlertMinutes()">
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-card">
+    <h3 class="section-title" onclick="toggleSection('statsBody')">
+      <span>İstatistikler</span>
+      <span class="chevron" id="statsBodyChevron">▾</span>
+    </h3>
+    <div id="statsBody">
+      <div class="tabs" style="margin-bottom:14px;">
+        <button id="statsTabWeek" onclick="setStatsPeriod('week')">Bu Hafta</button>
+        <button id="statsTabMonth" onclick="setStatsPeriod('month')">Bu Ay</button>
+        <button id="statsTabAll" class="on" onclick="setStatsPeriod('all')">Tüm Zamanlar</button>
+      </div>
+      <div class="stats-grid">
+        <div class="item">
+          <div class="num" id="statAvg">–</div>
+          <div class="label">Ortalama mola süresi</div>
+        </div>
+        <div class="item">
+          <div class="num" id="statMax">–</div>
+          <div class="label">En uzun mola</div>
+        </div>
+        <div class="item">
+          <div class="num" id="statBusyDay">–</div>
+          <div class="label">En yoğun gün</div>
+        </div>
+        <div class="item">
+          <div class="num" id="statTotalCount">0</div>
+          <div class="label">Toplam kayıt</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <span class="title-toggle" onclick="toggleSection('chartBody')">Günlük Özet <span class="chevron" id="chartBodyChevron">▾</span></span>
+      <div class="toggles">
+        <button id="range7" class="on" onclick="setRange(7)">7 gün</button>
+        <button id="range30" onclick="setRange(30)">30 gün</button>
+      </div>
+    </div>
+    <div id="chartBody">
+      <canvas id="chart" height="140"></canvas>
+      <div class="legend">
+        <span><i class="dot mola"></i>Mola</span>
+        <span><i class="dot is"></i>Dış Ziyaret</span>
+        <span><i class="dot mesai"></i>Mesai</span>
+      </div>
+      <div class="chart-hint">Detayını görmek için bir çubuğa dokun</div>
+      <div class="chart-detail" id="chartDetail" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div class="list-card">
+    <div class="list-header">
+      <span class="title-toggle" onclick="toggleSection('entryList')">Kayıt Geçmişi <span class="chevron" id="entryListChevron">▾</span></span>
+      <select id="dateSelect" onchange="renderList()"></select>
+    </div>
+    <div id="entryList"></div>
+  </div>
+
+  <div class="action-row">
+    <button class="export-btn" onclick="exportExcel()">Excel'e Aktar</button>
+    <button class="backup-btn" onclick="exportBackup()">Yedekle</button>
+  </div>
+  <div class="action-row">
+    <button class="backup-btn" style="flex:1;" onclick="document.getElementById('restoreFile').click()">Geri Yükle</button>
+  </div>
+  <input type="file" id="restoreFile" accept="application/json" style="display:none;" onchange="importBackup(event)">
+
+  <div class="footer-note">Veriler bu tarayıcıda saklanır (localStorage)</div>
+</div>
+
+<div class="modal-overlay" id="noteModalOverlay" onclick="if(event.target===this) closeNoteModal()">
+  <div class="modal-box">
+    <div class="modal-title">Notu Düzenle</div>
+    <textarea id="modalNoteInput" class="modal-textarea" placeholder="Not ekle..." maxlength="200"></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeNoteModal()">İptal</button>
+      <button class="modal-btn save" onclick="saveNoteModal()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<div class="undo-toast" id="undoToast">
+  <span>Kayıt silindi</span>
+  <button onclick="undoDelete()">GERİ AL</button>
+</div>
+
+<script>
+const STORAGE_KEY = 'mola_takip_data_v2';
+const ACTIVE_KEY = 'mola_takip_active_v2';
+const LIMIT_KEY = 'mola_takip_limit_v2';
+const ALERT_KEY = 'mola_takip_alertmin_v2';
+const THEME_KEY = 'mola_takip_theme_v2';
+
+let data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+let activeSession = JSON.parse(localStorage.getItem(ACTIVE_KEY) || 'null');
+let dailyLimit = parseInt(localStorage.getItem(LIMIT_KEY) || '60', 10);
+let sessionAlertMinutes = parseInt(localStorage.getItem(ALERT_KEY) || '15', 10);
+let theme = localStorage.getItem(THEME_KEY) || 'light';
+let chartRange = 7;
+let currentPeriod = 'today';
+let statsPeriod = 'all';
+let tickInterval = null;
+let hasAlerted = false;
+let lastAlertTime = 0;
+let audioCtx = null;
+let editingKey = null;
+let editingIdx = null;
+
+const TYPE_LABEL = {mola: 'Mola', is: 'Dış Ziyaret', mesai: 'Mesai'};
+const STOP_LABEL = {mola: 'Molayı Bitir', is: 'Dış Ziyareti Bitir', mesai: 'Mesaiyi Bitir'};
+const WEEKDAY_LABELS = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+
+function todayKey(d = new Date()){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function fmtTime(d){
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+function fmtDuration(ms, withSeconds=false){
+  const totalSec = Math.floor(ms/1000);
+  const h = Math.floor(totalSec/3600);
+  const m = Math.floor((totalSec%3600)/60);
+  const s = totalSec%60;
+  if(withSeconds){
+    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }
+  if(h>0) return h+'sa '+m+'dk';
+  return m+'dk';
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  localStorage.setItem(ACTIVE_KEY, JSON.stringify(activeSession));
+  localStorage.setItem(LIMIT_KEY, String(dailyLimit));
+  localStorage.setItem(ALERT_KEY, String(sessionAlertMinutes));
+  localStorage.setItem(THEME_KEY, theme);
+}
+
+function applyTheme(){
+  document.body.setAttribute('data-theme', theme);
+  document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+function toggleTheme(){
+  theme = theme === 'dark' ? 'light' : 'dark';
+  applyTheme();
+  save();
+  drawChart();
+}
+
+function ensureAudio(){
+  if(!audioCtx){
+    try{
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }catch(e){ audioCtx = null; }
+  }
+  if(audioCtx && audioCtx.state === 'suspended'){
+    audioCtx.resume().catch(()=>{});
+  }
+}
+
+function playBeep(){
+  if(!audioCtx) return;
+  const now = audioCtx.currentTime;
+  [0, 0.22].forEach(offset=>{
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, now + offset);
+    gain.gain.exponentialRampToValueAtTime(0.35, now + offset + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.18);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now + offset);
+    osc.stop(now + offset + 0.2);
+  });
+}
+
+function startSession(type){
+  if(activeSession) return;
+  ensureAudio();
+  activeSession = {start: Date.now(), type, note: ''};
+  hasAlerted = false;
+  lastAlertTime = 0;
+  document.getElementById('noteInput').value = '';
+  startTick();
+  save();
+  renderAll();
+}
+
+function updateNote(){
+  if(!activeSession) return;
+  activeSession.note = document.getElementById('noteInput').value;
+  save();
+}
+
+function stopSession(){
+  if(!activeSession) return;
+  const end = Date.now();
+  const key = todayKey(new Date(activeSession.start));
+  if(!data[key]) data[key] = [];
+  data[key].push({start: activeSession.start, end, type: activeSession.type, note: activeSession.note || ''});
+  activeSession = null;
+  hasAlerted = false;
+  stopTick();
+  document.getElementById('timerCard').classList.remove('alerting');
+  save();
+  renderAll();
+}
+
+function startTick(){
+  updateClock();
+  tickInterval = setInterval(()=>{ updateClock(); renderPeriodSummary(); checkAlert(); }, 1000);
+}
+function stopTick(){
+  clearInterval(tickInterval);
+  tickInterval = null;
+  document.getElementById('clockDisplay').textContent = '00:00:00';
+}
+function updateClock(){
+  if(!activeSession) return;
+  const elapsed = Date.now() - activeSession.start;
+  document.getElementById('clockDisplay').textContent = fmtDuration(elapsed, true);
+}
+function checkAlert(){
+  if(!activeSession || sessionAlertMinutes <= 0) return;
+  const elapsedMin = (Date.now() - activeSession.start) / 60000;
+  const card = document.getElementById('timerCard');
+  if(elapsedMin >= sessionAlertMinutes){
+    card.classList.add('alerting');
+    const now = Date.now();
+    if(!hasAlerted){
+      hasAlerted = true;
+      lastAlertTime = now;
+      if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
+      playBeep();
+    } else if(now - lastAlertTime >= 60000){
+      lastAlertTime = now;
+      if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
+      playBeep();
+    }
+  }
+}
+
+function updateButtonState(){
+  const idle = document.getElementById('idleButtons');
+  const active = document.getElementById('activeButtons');
+  const status = document.getElementById('statusText');
+  const stopBtn = document.querySelector('.btn-stop');
+  if(activeSession){
+    idle.style.display = 'none';
+    active.style.display = 'block';
+    document.getElementById('typeHint').style.display = 'none';
+    document.getElementById('noteInput').value = activeSession.note || '';
+    status.textContent = TYPE_LABEL[activeSession.type].toUpperCase() + ' DEVAM EDİYOR';
+    status.className = 'status active-' + activeSession.type;
+    stopBtn.textContent = STOP_LABEL[activeSession.type] || 'Bitir';
+    checkAlert();
+  } else {
+    idle.style.display = 'flex';
+    active.style.display = 'none';
+    document.getElementById('typeHint').style.display = 'block';
+    status.textContent = 'AKTİF DEĞİL';
+    status.className = 'status';
+    document.getElementById('timerCard').classList.remove('alerting');
+  }
+}
+
+function populateDateSelect(){
+  const sel = document.getElementById('dateSelect');
+  const keys = Object.keys(data).sort().reverse();
+  const tKey = todayKey();
+  if(!keys.includes(tKey)) keys.unshift(tKey);
+  const prevVal = sel.value;
+  sel.innerHTML = '';
+  keys.forEach(k=>{
+    const opt = document.createElement('option');
+    opt.value = k;
+    opt.textContent = k === tKey ? 'Bugün ('+k+')' : k;
+    sel.appendChild(opt);
+  });
+  sel.value = keys.includes(prevVal) ? prevVal : tKey;
+}
+
+function renderList(){
+  const sel = document.getElementById('dateSelect');
+  const key = sel.value || todayKey();
+  const entries = (data[key] || []).slice().sort((a,b)=>b.start-a.start);
+  const list = document.getElementById('entryList');
+  list.innerHTML = '';
+  if(entries.length === 0){
+    list.innerHTML = '<div class="empty">Bu tarihte kayıt yok</div>';
+    return;
+  }
+  entries.forEach((e, idx)=>{
+    const div = document.createElement('div');
+    div.className = 'entry';
+    const dur = e.end - e.start;
+    const noteHtml = e.note ? `<div class="entry-note">${escapeHtml(e.note)}</div>` : '';
+    div.innerHTML = `
+      <div class="entry-main" onclick="editNote('${key}', ${entries.length-1-idx})">
+        <div class="times">
+          <span class="tag ${e.type}">${TYPE_LABEL[e.type]}</span>
+          ${fmtTime(new Date(e.start))}<span class="arrow">→</span>${fmtTime(new Date(e.end))}
+        </div>
+        <div class="row-right">
+          <span class="dur ${e.type}">${fmtDuration(dur)}</span>
+          <button class="del" onclick="event.stopPropagation(); deleteEntry('${key}', ${entries.length-1-idx})">✕</button>
+        </div>
+      </div>
+      ${noteHtml}
+    `;
+    list.appendChild(div);
+  });
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function findEntryByOriginalIdx(key, originalIdx){
+  const original = data[key];
+  const sorted = original.slice().sort((a,b)=>b.start-a.start);
+  const target = sorted[sorted.length - 1 - originalIdx];
+  const realIdx = original.findIndex(e=>e.start===target.start && e.end===target.end);
+  return realIdx;
+}
+
+function editNote(key, originalIdx){
+  const realIdx = findEntryByOriginalIdx(key, originalIdx);
+  if(realIdx === -1) return;
+  const entry = data[key][realIdx];
+  editingKey = key;
+  editingIdx = realIdx;
+  const input = document.getElementById('modalNoteInput');
+  input.value = entry.note || '';
+  document.getElementById('noteModalOverlay').classList.add('show');
+  input.focus();
+}
+
+function closeNoteModal(){
+  document.getElementById('noteModalOverlay').classList.remove('show');
+  editingKey = null;
+  editingIdx = null;
+}
+
+function saveNoteModal(){
+  if(editingKey === null || editingIdx === null) return;
+  const newNote = document.getElementById('modalNoteInput').value;
+  data[editingKey][editingIdx].note = newNote;
+  save();
+  renderList();
+  closeNoteModal();
+}
+
+let lastDeleted = null;
+let undoTimeout = null;
+
+function deleteEntry(key, originalIdx){
+  const realIdx = findEntryByOriginalIdx(key, originalIdx);
+  if(realIdx > -1){
+    const entry = data[key][realIdx];
+    lastDeleted = { key, entry: {...entry} };
+    data[key].splice(realIdx,1);
+    if(data[key].length === 0) delete data[key];
+    save();
+    populateDateSelect();
+    renderAll();
+    showUndoToast();
+  }
+}
+
+function showUndoToast(){
+  const toast = document.getElementById('undoToast');
+  toast.classList.add('show');
+  clearTimeout(undoTimeout);
+  undoTimeout = setTimeout(()=>{
+    toast.classList.remove('show');
+    lastDeleted = null;
+  }, 5000);
+}
+
+function undoDelete(){
+  if(!lastDeleted) return;
+  const { key, entry } = lastDeleted;
+  if(!data[key]) data[key] = [];
+  data[key].push(entry);
+  lastDeleted = null;
+  clearTimeout(undoTimeout);
+  document.getElementById('undoToast').classList.remove('show');
+  save();
+  populateDateSelect();
+  renderAll();
+}
+
+function updateLimit(){
+  const val = parseInt(document.getElementById('limitInput').value, 10);
+  dailyLimit = isNaN(val) ? 0 : val;
+  save();
+  renderPeriodSummary();
+}
+function updateAlertMinutes(){
+  const val = parseInt(document.getElementById('alertInput').value, 10);
+  sessionAlertMinutes = isNaN(val) ? 0 : val;
+  hasAlerted = false;
+  lastAlertTime = 0;
+  save();
+}
+
+function getWeekStart(d){
+  const day = (d.getDay() + 6) % 7; // Monday = 0
+  const start = new Date(d);
+  start.setDate(d.getDate() - day);
+  start.setHours(0,0,0,0);
+  return start;
+}
+function getMonthStart(d){
+  return new Date(d.getFullYear(), d.getMonth(), 1, 0,0,0,0);
+}
+
+function sumRange(startDate){
+  const now = new Date();
+  let molaMs=0, isMs=0, mesaiMs=0, count=0;
+  Object.keys(data).forEach(key=>{
+    const kd = new Date(key + 'T00:00:00');
+    if(kd >= startDate && kd <= now){
+      data[key].forEach(e=>{
+        if(e.type==='mola') molaMs += (e.end-e.start);
+        else if(e.type==='mesai') mesaiMs += (e.end-e.start);
+        else isMs += (e.end-e.start);
+        count++;
+      });
+    }
+  });
+  return {molaMs, isMs, mesaiMs, count};
+}
+
+function setPeriod(period){
+  currentPeriod = period;
+  document.getElementById('tabToday').className = period==='today' ? 'on' : '';
+  document.getElementById('tabWeek').className = period==='week' ? 'on' : '';
+  document.getElementById('tabMonth').className = period==='month' ? 'on' : '';
+  renderPeriodSummary();
+}
+
+function renderPeriodSummary(){
+  let molaMs=0, isMs=0, mesaiMs=0, count=0;
+  const now = new Date();
+  if(currentPeriod === 'today'){
+    const key = todayKey();
+    const entries = data[key] || [];
+    entries.forEach(e=>{
+      if(e.type==='mola') molaMs += (e.end-e.start);
+      else if(e.type==='mesai') mesaiMs += (e.end-e.start);
+      else isMs += (e.end-e.start);
+    });
+    count = entries.length;
+  } else if(currentPeriod === 'week'){
+    const r = sumRange(getWeekStart(now));
+    molaMs = r.molaMs; isMs = r.isMs; mesaiMs = r.mesaiMs; count = r.count;
+  } else {
+    const r = sumRange(getMonthStart(now));
+    molaMs = r.molaMs; isMs = r.isMs; mesaiMs = r.mesaiMs; count = r.count;
+  }
+  if(activeSession){
+    const liveMs = Date.now() - activeSession.start;
+    if(activeSession.type === 'mola') molaMs += liveMs;
+    else if(activeSession.type === 'mesai') mesaiMs += liveMs;
+    else isMs += liveMs;
+    count += 1;
+  }
+  document.getElementById('periodMolaTotal').textContent = fmtDuration(molaMs);
+  document.getElementById('periodIsTotal').textContent = fmtDuration(isMs);
+  document.getElementById('periodMesaiTotal').textContent = fmtDuration(mesaiMs);
+  document.getElementById('periodCount').textContent = count;
+
+  // Günlük limit uyarısı her zaman bugüne göre
+  const todayEntries = data[todayKey()] || [];
+  let todayMolaMs = todayEntries.filter(e=>e.type==='mola').reduce((s,e)=>s+(e.end-e.start),0);
+  if(activeSession && activeSession.type === 'mola'){
+    todayMolaMs += (Date.now() - activeSession.start);
+  }
+  const banner = document.getElementById('limitBanner');
+  const molaMin = todayMolaMs / 60000;
+  if(dailyLimit > 0 && molaMin > dailyLimit){
+    banner.className = 'banner show';
+    banner.textContent = `⚠ Günlük mola limitini aştın: ${fmtDuration(todayMolaMs)} / ${dailyLimit}dk`;
+  } else {
+    banner.className = 'banner';
+  }
+
+  // Günlük limit ilerleme çubuğu
+  const progressWrap = document.getElementById('limitProgressWrap');
+  const fill = document.getElementById('limitProgressFill');
+  const label = document.getElementById('limitProgressLabel');
+  if(dailyLimit > 0){
+    progressWrap.style.display = 'block';
+    const pct = Math.min(100, (molaMin / dailyLimit) * 100);
+    fill.style.width = pct + '%';
+    fill.classList.remove('warn', 'danger');
+    if(molaMin > dailyLimit){
+      fill.classList.add('danger');
+    } else if(pct >= 70){
+      fill.classList.add('warn');
+    }
+    label.textContent = `Bugün limitin %${Math.round(Math.min(pct,999))}'ini kullandın (${Math.round(molaMin)} / ${dailyLimit}dk)`;
+  } else {
+    progressWrap.style.display = 'none';
+  }
+}
+
+function setStatsPeriod(period){
+  statsPeriod = period;
+  document.getElementById('statsTabWeek').className = period==='week' ? 'on' : '';
+  document.getElementById('statsTabMonth').className = period==='month' ? 'on' : '';
+  document.getElementById('statsTabAll').className = period==='all' ? 'on' : '';
+  renderAllTimeStats();
+}
+
+function getStatsEntries(){
+  const now = new Date();
+  let startDate = null;
+  if(statsPeriod === 'week') startDate = getWeekStart(now);
+  else if(statsPeriod === 'month') startDate = getMonthStart(now);
+
+  let allEntries = [];
+  Object.keys(data).forEach(key=>{
+    if(startDate){
+      const kd = new Date(key + 'T00:00:00');
+      if(kd < startDate || kd > now) return;
+    }
+    data[key].forEach(e=> allEntries.push(e));
+  });
+  return allEntries;
+}
+
+function renderAllTimeStats(){
+  let allEntries = getStatsEntries();
+  const molaEntries = allEntries.filter(e=>e.type==='mola');
+  document.getElementById('statTotalCount').textContent = allEntries.length;
+
+  if(molaEntries.length === 0){
+    document.getElementById('statAvg').textContent = '–';
+    document.getElementById('statMax').textContent = '–';
+    document.getElementById('statBusyDay').textContent = '–';
+    return;
+  }
+
+  const durations = molaEntries.map(e=>e.end-e.start);
+  const avgMs = durations.reduce((a,b)=>a+b,0) / durations.length;
+  const maxMs = Math.max(...durations);
+  document.getElementById('statAvg').textContent = fmtDuration(avgMs);
+  document.getElementById('statMax').textContent = fmtDuration(maxMs);
+
+  const dayTotals = [0,0,0,0,0,0,0];
+  molaEntries.forEach(e=>{
+    const wd = new Date(e.start).getDay();
+    dayTotals[wd] += (e.end-e.start);
+  });
+  let maxDay = 0;
+  for(let i=1;i<7;i++){ if(dayTotals[i] > dayTotals[maxDay]) maxDay = i; }
+  document.getElementById('statBusyDay').textContent = dayTotals[maxDay] > 0 ? WEEKDAY_LABELS[maxDay] : '–';
+}
+
+function toggleSection(id){
+  const body = document.getElementById(id);
+  const chevron = document.getElementById(id + 'Chevron');
+  const collapsed = body.classList.toggle('collapsed');
+  if(chevron) chevron.textContent = collapsed ? '▸' : '▾';
+  if(id === 'chartBody' && !collapsed){
+    drawChart();
+  }
+}
+
+function setRange(days){
+  chartRange = days;
+  document.getElementById('range7').className = days===7 ? 'on' : '';
+  document.getElementById('range30').className = days===30 ? 'on' : '';
+  drawChart();
+}
+
+let chartClickState = {days:[], molaMins:[], isMins:[], mesaiMins:[], barW:0, barGap:0};
+
+function drawChart(){
+  const canvas = document.getElementById('chart');
+  const chartBodyEl = document.getElementById('chartBody');
+  if(chartBodyEl && chartBodyEl.classList.contains('collapsed')) return;
+  document.getElementById('chartDetail').style.display = 'none';
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = canvas.parentElement.clientWidth - 40;
+  const cssHeight = 140;
+  canvas.width = cssWidth * dpr;
+  canvas.height = cssHeight * dpr;
+  canvas.style.width = cssWidth + 'px';
+  canvas.style.height = cssHeight + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0,0,cssWidth,cssHeight);
+
+  const days = [];
+  const now = new Date();
+  if(chartRange === 7){
+    const monday = getWeekStart(now);
+    for(let i = 0; i < 7; i++){
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      days.push(todayKey(d));
+    }
+  } else {
+    for(let i = chartRange - 1; i >= 0; i--){
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      days.push(todayKey(d));
+    }
+  }
+
+  const molaMins = [], isMins = [], mesaiMins = [];
+  days.forEach(k=>{
+    const entries = data[k] || [];
+    let m=0, s=0, mz=0;
+    entries.forEach(e=>{
+      const min = (e.end - e.start)/60000;
+      if(e.type==='mola') m+=min;
+      else if(e.type==='mesai') mz+=min;
+      else s+=min;
+    });
+    molaMins.push(m); isMins.push(s); mesaiMins.push(mz);
+  });
+
+  const maxVal = Math.max(10, ...days.map((_,i)=>molaMins[i]+isMins[i]+mesaiMins[i]));
+  const chartH = cssHeight - 24;
+  const barGap = chartRange === 30 ? 2 : 8;
+  const barW = (cssWidth / days.length) - barGap;
+  chartClickState = {days, molaMins, isMins, mesaiMins, barW, barGap};
+  const molaColor = getComputedStyle(document.body).getPropertyValue('--mola').trim() || '#2f6f4f';
+  const isColor = getComputedStyle(document.body).getPropertyValue('--is').trim() || '#2f5f8f';
+  const mesaiColor = getComputedStyle(document.body).getPropertyValue('--mesai').trim() || '#a5691e';
+  const mutedColor = getComputedStyle(document.body).getPropertyValue('--muted').trim() || '#8a8a85';
+
+  days.forEach((k, i)=>{
+    const x = i * (barW + barGap) + barGap/2;
+    const mH = (molaMins[i]/maxVal) * chartH;
+    const sH = (isMins[i]/maxVal) * chartH;
+    const zH = (mesaiMins[i]/maxVal) * chartH;
+    ctx.fillStyle = molaColor;
+    ctx.fillRect(x, chartH - mH, barW, mH);
+    ctx.fillStyle = isColor;
+    ctx.fillRect(x, chartH - mH - sH, barW, sH);
+    ctx.fillStyle = mesaiColor;
+    ctx.fillRect(x, chartH - mH - sH - zH, barW, zH);
+
+    if(chartRange === 7){
+      ctx.fillStyle = mutedColor;
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      const d = new Date(k);
+      const label = d.toLocaleDateString('tr-TR', {weekday:'short'});
+      ctx.fillText(label, x + barW/2, cssHeight - 6);
+    }
+  });
+}
+
+function onChartClick(e){
+  const {days, molaMins, isMins, mesaiMins, barW, barGap} = chartClickState;
+  if(!days.length) return;
+  const canvas = e.currentTarget;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const idx = Math.floor(x / (barW + barGap));
+  if(idx < 0 || idx >= days.length) return;
+  showChartDetail(idx);
+}
+
+function showChartDetail(idx){
+  const {days, molaMins, isMins, mesaiMins} = chartClickState;
+  const key = days[idx];
+  const d = new Date(key + 'T00:00:00');
+  const dateLabel = d.toLocaleDateString('tr-TR', {day:'numeric', month:'long', year:'numeric', weekday:'long'});
+  const m = molaMins[idx], s = isMins[idx], z = mesaiMins[idx];
+  const detail = document.getElementById('chartDetail');
+  if(m+s+z === 0){
+    detail.innerHTML = `<div class="chart-detail-date">${dateLabel}</div><div class="chart-detail-empty">Bu gün kayıt yok</div>`;
+  } else {
+    detail.innerHTML = `
+      <div class="chart-detail-date">${dateLabel}</div>
+      <div class="chart-detail-row"><span class="dot mola"></span>Mola <b>${fmtDuration(m*60000)}</b></div>
+      <div class="chart-detail-row"><span class="dot is"></span>Dış Ziyaret <b>${fmtDuration(s*60000)}</b></div>
+      <div class="chart-detail-row"><span class="dot mesai"></span>Mesai <b>${fmtDuration(z*60000)}</b></div>
+    `;
+  }
+  detail.style.display = 'block';
+}
+
+let xlsxLoadPromise = null;
+function loadXlsxLib(){
+  if(window.XLSX) return Promise.resolve();
+  if(xlsxLoadPromise) return xlsxLoadPromise;
+  xlsxLoadPromise = new Promise((resolve, reject)=>{
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    script.onload = () => resolve();
+    script.onerror = () => { xlsxLoadPromise = null; reject(new Error('xlsx yüklenemedi')); };
+    document.head.appendChild(script);
+  });
+  return xlsxLoadPromise;
+}
+
+function exportExcel(){
+  const rows = [['Tarih','Tür','Başlangıç','Bitiş','Süre (dakika)','Not']];
+  Object.keys(data).sort().forEach(key=>{
+    data[key].slice().sort((a,b)=>a.start-b.start).forEach(e=>{
+      rows.push([
+        key,
+        TYPE_LABEL[e.type],
+        fmtTime(new Date(e.start)),
+        fmtTime(new Date(e.end)),
+        Math.round((e.end - e.start)/60000),
+        e.note || ''
+      ]);
+    });
+  });
+  if(rows.length === 1){
+    alert('Dışa aktarılacak kayıt yok.');
+    return;
+  }
+  const btn = document.querySelector('.export-btn');
+  const originalLabel = btn ? btn.textContent : '';
+  if(btn){ btn.textContent = 'Yükleniyor...'; btn.disabled = true; }
+  loadXlsxLib().then(()=>{
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:12},{wch:12},{wch:10},{wch:10},{wch:14},{wch:24}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Kayıtlar');
+    XLSX.writeFile(wb, 'mola_takip_' + todayKey() + '.xlsx');
+  }).catch(()=>{
+    alert('Excel kütüphanesi yüklenemedi. İnternet bağlantınızı kontrol edin.');
+  }).finally(()=>{
+    if(btn){ btn.textContent = originalLabel; btn.disabled = false; }
+  });
+}
+
+function exportBackup(){
+  const backup = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    data, dailyLimit, sessionAlertMinutes, theme
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mola_takip_yedek_' + todayKey() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importBackup(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const parsed = JSON.parse(e.target.result);
+      if(!parsed.data) throw new Error('Geçersiz yedek dosyası');
+      const ok = confirm('Mevcut veriler yedekteki verilerle değiştirilecek. Devam edilsin mi?');
+      if(!ok) return;
+      data = parsed.data || {};
+      if(typeof parsed.dailyLimit === 'number') dailyLimit = parsed.dailyLimit;
+      if(typeof parsed.sessionAlertMinutes === 'number') sessionAlertMinutes = parsed.sessionAlertMinutes;
+      if(parsed.theme) theme = parsed.theme;
+      save();
+      document.getElementById('limitInput').value = dailyLimit;
+      document.getElementById('alertInput').value = sessionAlertMinutes;
+      applyTheme();
+      populateDateSelect();
+      renderAll();
+      alert('Geri yükleme tamamlandı.');
+    } catch(err){
+      alert('Dosya okunamadı: geçerli bir yedek dosyası değil.');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function renderAll(){
+  updateButtonState();
+  populateDateSelect();
+  renderList();
+  renderPeriodSummary();
+  renderAllTimeStats();
+  drawChart();
+}
+
+applyTheme();
+document.getElementById('limitInput').value = dailyLimit;
+document.getElementById('alertInput').value = sessionAlertMinutes;
+if(activeSession){
+  startTick();
+}
+renderAll();
+window.addEventListener('resize', drawChart);
+document.getElementById('chart').addEventListener('click', onChartClick);
+
+// Kısayoldan (widget benzeri) gelen otomatik başlatma
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  const action = params.get('action');
+  if((action === 'mola' || action === 'is') && !activeSession){
+    startSession(action);
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+})();
+
+if('serviceWorker' in navigator){
+  // Yeni sürüm devreye girdiğinde sayfayı otomatik yenile
+  let swRefreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if(swRefreshing) return;
+    swRefreshing = true;
+    window.location.reload();
+  });
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' }).then((reg) => {
+      // Sayfa her açıldığında/öne geldiğinde güncelleme olup olmadığını kontrol et
+      reg.update().catch(()=>{});
+      document.addEventListener('visibilitychange', () => {
+        if(document.visibilityState === 'visible'){
+          reg.update().catch(()=>{});
+        }
+      });
+    }).catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
