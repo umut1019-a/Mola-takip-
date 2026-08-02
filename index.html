@@ -887,21 +887,20 @@ function ensureAudio(){
 function playBeep(){
   if(!audioCtx) return;
   const now = audioCtx.currentTime;
-  const freqs = [988, 784, 988, 784, 988, 784]; // tiz-pes alarm efekti
+  const freqs = [880, 880]; // yumuşak, iki kısa bip
   freqs.forEach((freq, idx)=>{
-    const offset = idx * 0.24;
+    const offset = idx * 0.26;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.type = 'square';
+    osc.type = 'sine';
     osc.frequency.value = freq;
     gain.gain.setValueAtTime(0.0001, now + offset);
-    gain.gain.exponentialRampToValueAtTime(0.9, now + offset + 0.015);
-    gain.gain.setValueAtTime(0.9, now + offset + 0.16);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.22);
+    gain.gain.exponentialRampToValueAtTime(0.3, now + offset + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.18);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start(now + offset);
-    osc.stop(now + offset + 0.23);
+    osc.stop(now + offset + 0.2);
   });
 }
 
@@ -1004,11 +1003,11 @@ function checkAlert(){
     if(!hasAlerted){
       hasAlerted = true;
       lastAlertTime = now;
-      if(navigator.vibrate) navigator.vibrate([300,120,300,120,300,120,300]);
+      if(navigator.vibrate) navigator.vibrate([200,100,200]);
       playBeep();
-    } else if(now - lastAlertTime >= 30000){
+    } else if(now - lastAlertTime >= 60000){
       lastAlertTime = now;
-      if(navigator.vibrate) navigator.vibrate([300,120,300,120,300,120,300]);
+      if(navigator.vibrate) navigator.vibrate([200,100,200]);
       playBeep();
     }
   }
