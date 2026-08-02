@@ -91,9 +91,24 @@
     margin-bottom:16px;
     display:none;
     align-items:center;
+    justify-content:space-between;
     gap:8px;
   }
   .banner.show{display:flex;}
+  .banner.info{
+    background:var(--is-soft);
+    color:var(--is);
+  }
+  .banner .banner-backup-btn{
+    background:var(--is);
+    color:#fff;
+    padding:6px 12px;
+    border-radius:8px;
+    font-size:12px;
+    font-weight:600;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
 
   .timer-card{
     background:var(--card);
@@ -294,6 +309,48 @@
     background:var(--ink);
     color:var(--bg);
     border-color:var(--ink);
+  }
+  .trend-indicator{
+    font-size:12px;
+    font-weight:700;
+    margin-left:8px;
+  }
+  .trend-indicator.up{color:var(--danger);}
+  .trend-indicator.down{color:var(--mola);}
+  .chart-subheader{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .nav-btn{
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--ink);
+    width:26px;
+    height:26px;
+    padding:0;
+    border-radius:8px;
+    font-size:13px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .nav-btn:disabled{opacity:0.35;}
+  .chart-period-label{
+    font-size:11px;
+    color:var(--muted);
+    min-width:110px;
+    text-align:center;
+  }
+  .legend-item{
+    cursor:pointer;
+    transition:opacity 0.15s ease;
+  }
+  .legend-item.hidden{
+    opacity:0.35;
+    text-decoration:line-through;
   }
   .legend{display:flex; gap:14px; font-size:11px; color:var(--muted); margin-top:8px;}
   .legend span{display:flex; align-items:center; gap:5px;}
@@ -582,6 +639,7 @@
   </div>
 
   <div class="banner" id="limitBanner"></div>
+  <div class="banner info" id="backupReminderBanner"></div>
 
   <div class="limit-progress-wrap" id="limitProgressWrap">
     <div class="limit-progress-track">
@@ -644,6 +702,10 @@
         <span>Tek mola uyarı süresi (dakika)</span>
         <input type="number" id="alertInput" min="0" step="1" onchange="updateAlertMinutes()">
       </div>
+      <div class="settings-row">
+        <span>Kalıcı bildirim ile takip</span>
+        <input type="checkbox" id="notifToggle" onchange="toggleNotifSetting()" style="width:20px; height:20px;">
+      </div>
     </div>
   </div>
 
@@ -681,18 +743,26 @@
 
   <div class="chart-card">
     <div class="chart-header">
-      <span class="title-toggle" onclick="toggleSection('chartBody')">Günlük Özet <span class="chevron" id="chartBodyChevron">▾</span></span>
+      <div>
+        <span class="title-toggle" onclick="toggleSection('chartBody')">Günlük Özet <span class="chevron" id="chartBodyChevron">▾</span></span>
+        <span class="trend-indicator" id="trendIndicator"></span>
+      </div>
       <div class="toggles">
         <button id="range7" class="on" onclick="setRange(7)">7 gün</button>
         <button id="range30" onclick="setRange(30)">30 gün</button>
       </div>
     </div>
     <div id="chartBody">
+      <div class="chart-subheader">
+        <button class="nav-btn" onclick="navigateChart(1)">‹</button>
+        <span class="chart-period-label" id="chartPeriodLabel"></span>
+        <button class="nav-btn" id="navNextBtn" onclick="navigateChart(-1)">›</button>
+      </div>
       <canvas id="chart" height="140"></canvas>
       <div class="legend">
-        <span><i class="dot mola"></i>Mola</span>
-        <span><i class="dot is"></i>Dış Ziyaret</span>
-        <span><i class="dot mesai"></i>Mesai</span>
+        <span class="legend-item" id="legendMola" onclick="toggleLegendFilter('mola')"><i class="dot mola"></i>Mola</span>
+        <span class="legend-item" id="legendIs" onclick="toggleLegendFilter('is')"><i class="dot is"></i>Dış Ziyaret</span>
+        <span class="legend-item" id="legendMesai" onclick="toggleLegendFilter('mesai')"><i class="dot mesai"></i>Mesai</span>
       </div>
       <div class="chart-hint">Detayını görmek için bir çubuğa dokun</div>
       <div class="chart-detail" id="chartDetail" style="display:none;"></div>
@@ -748,6 +818,10 @@ let dailyLimit = parseInt(localStorage.getItem(LIMIT_KEY) || '60', 10);
 let sessionAlertMinutes = parseInt(localStorage.getItem(ALERT_KEY) || '15', 10);
 let theme = localStorage.getItem(THEME_KEY) || 'light';
 let chartRange = 7;
+let chartOffset = 0;
+let hideMola = false;
+let hideIs = false;
+let hideMesai = false;
 let currentPeriod = 'today';
 let statsPeriod = 'all';
 let tickInterval = null;
@@ -756,6 +830,8 @@ let lastAlertTime = 0;
 let audioCtx = null;
 let editingKey = null;
 let editingIdx = null;
+let notifEnabled = localStorage.getItem('mola_takip_notif_v2') === '1';
+let notifInterval = null;
 
 const TYPE_LABEL = {mola: 'Mola', is: 'Dış Ziyaret', mesai: 'Mesai'};
 const STOP_LABEL = {mola: 'Molayı Bitir', is: 'Dış Ziyareti Bitir', mesai: 'Mesaiyi Bitir'};
@@ -811,19 +887,59 @@ function ensureAudio(){
 function playBeep(){
   if(!audioCtx) return;
   const now = audioCtx.currentTime;
-  [0, 0.22].forEach(offset=>{
+  const freqs = [988, 784, 988, 784, 988, 784]; // tiz-pes alarm efekti
+  freqs.forEach((freq, idx)=>{
+    const offset = idx * 0.24;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = 880;
+    osc.type = 'square';
+    osc.frequency.value = freq;
     gain.gain.setValueAtTime(0.0001, now + offset);
-    gain.gain.exponentialRampToValueAtTime(0.35, now + offset + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.18);
+    gain.gain.exponentialRampToValueAtTime(0.9, now + offset + 0.015);
+    gain.gain.setValueAtTime(0.9, now + offset + 0.16);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.22);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start(now + offset);
-    osc.stop(now + offset + 0.2);
+    osc.stop(now + offset + 0.23);
   });
+}
+
+function toggleNotifSetting(){
+  notifEnabled = document.getElementById('notifToggle').checked;
+  localStorage.setItem('mola_takip_notif_v2', notifEnabled ? '1' : '0');
+  if(notifEnabled && 'Notification' in window && Notification.permission === 'default'){
+    Notification.requestPermission();
+  }
+}
+
+function showLiveNotification(){
+  if(!notifEnabled || !activeSession) return;
+  if(!('serviceWorker' in navigator) || !('Notification' in window)) return;
+  if(Notification.permission !== 'granted') return;
+  const elapsedMin = Math.floor((Date.now() - activeSession.start) / 60000);
+  const label = TYPE_LABEL[activeSession.type];
+  navigator.serviceWorker.ready.then(reg=>{
+    reg.showNotification(label + ' devam ediyor', {
+      body: 'Süre: ' + elapsedMin + ' dakika' + (activeSession.note ? ' · ' + activeSession.note : ''),
+      tag: 'mola-timer',
+      renotify: false,
+      silent: true,
+      requireInteraction: true,
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
+      actions: [{ action: 'stop', title: 'Bitir' }]
+    });
+  }).catch(()=>{});
+}
+
+function closeLiveNotification(){
+  if(!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then(reg=>{
+    reg.getNotifications({tag:'mola-timer'}).then(list=>{
+      list.forEach(n=>n.close());
+    });
+  }).catch(()=>{});
 }
 
 function startSession(type){
@@ -836,6 +952,10 @@ function startSession(type){
   startTick();
   save();
   renderAll();
+  showLiveNotification();
+  if(notifEnabled){
+    notifInterval = setInterval(showLiveNotification, 60000);
+  }
 }
 
 function updateNote(){
@@ -853,6 +973,8 @@ function stopSession(){
   activeSession = null;
   hasAlerted = false;
   stopTick();
+  if(notifInterval){ clearInterval(notifInterval); notifInterval = null; }
+  closeLiveNotification();
   document.getElementById('timerCard').classList.remove('alerting');
   save();
   renderAll();
@@ -882,11 +1004,11 @@ function checkAlert(){
     if(!hasAlerted){
       hasAlerted = true;
       lastAlertTime = now;
-      if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
+      if(navigator.vibrate) navigator.vibrate([300,120,300,120,300,120,300]);
       playBeep();
-    } else if(now - lastAlertTime >= 60000){
+    } else if(now - lastAlertTime >= 30000){
       lastAlertTime = now;
-      if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
+      if(navigator.vibrate) navigator.vibrate([300,120,300,120,300,120,300]);
       playBeep();
     }
   }
@@ -1226,9 +1348,74 @@ function toggleSection(id){
 
 function setRange(days){
   chartRange = days;
+  chartOffset = 0;
   document.getElementById('range7').className = days===7 ? 'on' : '';
   document.getElementById('range30').className = days===30 ? 'on' : '';
   drawChart();
+}
+
+function navigateChart(direction){
+  const newOffset = chartOffset + direction;
+  if(newOffset < 0) return;
+  if(newOffset > 104) return;
+  chartOffset = newOffset;
+  drawChart();
+}
+
+function toggleLegendFilter(type){
+  if(type === 'mola') hideMola = !hideMola;
+  else if(type === 'is') hideIs = !hideIs;
+  else hideMesai = !hideMesai;
+  document.getElementById('legendMola').className = 'legend-item' + (hideMola ? ' hidden' : '');
+  document.getElementById('legendIs').className = 'legend-item' + (hideIs ? ' hidden' : '');
+  document.getElementById('legendMesai').className = 'legend-item' + (hideMesai ? ' hidden' : '');
+  drawChart();
+}
+
+function getChartDays(range, offset){
+  const days = [];
+  const now = new Date();
+  if(range === 7){
+    const monday = getWeekStart(now);
+    monday.setDate(monday.getDate() - offset*7);
+    for(let i = 0; i < 7; i++){
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      days.push(todayKey(d));
+    }
+  } else {
+    const end = new Date(now);
+    end.setDate(end.getDate() - offset*30);
+    for(let i = 29; i >= 0; i--){
+      const d = new Date(end);
+      d.setDate(d.getDate()-i);
+      days.push(todayKey(d));
+    }
+  }
+  return days;
+}
+
+function computeChartTotals(days){
+  const molaMins = [], isMins = [], mesaiMins = [];
+  days.forEach(k=>{
+    const entries = data[k] || [];
+    let m=0, s=0, mz=0;
+    entries.forEach(e=>{
+      const min = (e.end - e.start)/60000;
+      if(e.type==='mola') m+=min;
+      else if(e.type==='mesai') mz+=min;
+      else s+=min;
+    });
+    molaMins.push(m); isMins.push(s); mesaiMins.push(mz);
+  });
+  return { molaMins, isMins, mesaiMins };
+}
+
+function formatPeriodLabel(days){
+  const start = new Date(days[0] + 'T00:00:00');
+  const end = new Date(days[days.length-1] + 'T00:00:00');
+  const opts = { day:'numeric', month:'short' };
+  return start.toLocaleDateString('tr-TR', opts) + ' – ' + end.toLocaleDateString('tr-TR', opts);
 }
 
 let chartClickState = {days:[], molaMins:[], isMins:[], mesaiMins:[], barW:0, barGap:0};
@@ -1249,37 +1436,16 @@ function drawChart(){
   ctx.scale(dpr, dpr);
   ctx.clearRect(0,0,cssWidth,cssHeight);
 
-  const days = [];
-  const now = new Date();
-  if(chartRange === 7){
-    const monday = getWeekStart(now);
-    for(let i = 0; i < 7; i++){
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      days.push(todayKey(d));
-    }
-  } else {
-    for(let i = chartRange - 1; i >= 0; i--){
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      days.push(todayKey(d));
-    }
-  }
+  const days = getChartDays(chartRange, chartOffset);
+  const { molaMins, isMins, mesaiMins } = computeChartTotals(days);
 
-  const molaMins = [], isMins = [], mesaiMins = [];
-  days.forEach(k=>{
-    const entries = data[k] || [];
-    let m=0, s=0, mz=0;
-    entries.forEach(e=>{
-      const min = (e.end - e.start)/60000;
-      if(e.type==='mola') m+=min;
-      else if(e.type==='mesai') mz+=min;
-      else s+=min;
-    });
-    molaMins.push(m); isMins.push(s); mesaiMins.push(mz);
-  });
+  const prevDays = getChartDays(chartRange, chartOffset+1);
+  const prevTotals = computeChartTotals(prevDays);
 
-  const maxVal = Math.max(10, ...days.map((_,i)=>molaMins[i]+isMins[i]+mesaiMins[i]));
+  const visTotal = (i)=> (hideMola?0:molaMins[i]) + (hideIs?0:isMins[i]) + (hideMesai?0:mesaiMins[i]);
+  const prevVisTotal = (i)=> (hideMola?0:prevTotals.molaMins[i]) + (hideIs?0:prevTotals.isMins[i]) + (hideMesai?0:prevTotals.mesaiMins[i]);
+
+  const maxVal = Math.max(10, ...days.map((_,i)=>visTotal(i)));
   const chartH = cssHeight - 24;
   const barGap = chartRange === 30 ? 2 : 8;
   const barW = (cssWidth / days.length) - barGap;
@@ -1291,9 +1457,9 @@ function drawChart(){
 
   days.forEach((k, i)=>{
     const x = i * (barW + barGap) + barGap/2;
-    const mH = (molaMins[i]/maxVal) * chartH;
-    const sH = (isMins[i]/maxVal) * chartH;
-    const zH = (mesaiMins[i]/maxVal) * chartH;
+    const mH = (hideMola ? 0 : molaMins[i]/maxVal * chartH);
+    const sH = (hideIs ? 0 : isMins[i]/maxVal * chartH);
+    const zH = (hideMesai ? 0 : mesaiMins[i]/maxVal * chartH);
     ctx.fillStyle = molaColor;
     ctx.fillRect(x, chartH - mH, barW, mH);
     ctx.fillStyle = isColor;
@@ -1305,11 +1471,43 @@ function drawChart(){
       ctx.fillStyle = mutedColor;
       ctx.font = '10px sans-serif';
       ctx.textAlign = 'center';
-      const d = new Date(k);
+      const d = new Date(k + 'T00:00:00');
       const label = d.toLocaleDateString('tr-TR', {weekday:'short'});
       ctx.fillText(label, x + barW/2, cssHeight - 6);
+    } else if(chartRange === 30){
+      const showLabel = (i % 5 === 0) || (i === days.length - 1);
+      if(showLabel){
+        ctx.fillStyle = mutedColor;
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'center';
+        const d = new Date(k + 'T00:00:00');
+        ctx.fillText(String(d.getDate()), x + barW/2, cssHeight - 6);
+      }
     }
   });
+
+  document.getElementById('chartPeriodLabel').textContent = formatPeriodLabel(days);
+  document.getElementById('navNextBtn').disabled = (chartOffset === 0);
+
+  const currentTotal = days.reduce((acc,_,i)=>acc+visTotal(i), 0);
+  const prevTotalSum = prevDays.reduce((acc,_,i)=>acc+prevVisTotal(i), 0);
+  const trendEl = document.getElementById('trendIndicator');
+  if(prevTotalSum > 0){
+    const pct = Math.round(((currentTotal - prevTotalSum) / prevTotalSum) * 100);
+    if(pct === 0){
+      trendEl.textContent = '= %0';
+      trendEl.className = 'trend-indicator';
+    } else if(pct > 0){
+      trendEl.textContent = '▲ %' + pct;
+      trendEl.className = 'trend-indicator up';
+    } else {
+      trendEl.textContent = '▼ %' + Math.abs(pct);
+      trendEl.className = 'trend-indicator down';
+    }
+  } else {
+    trendEl.textContent = '';
+    trendEl.className = 'trend-indicator';
+  }
 }
 
 function onChartClick(e){
@@ -1406,6 +1604,26 @@ function exportBackup(){
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  localStorage.setItem('mola_takip_lastbackup_v2', String(Date.now()));
+  checkBackupReminder();
+}
+
+function checkBackupReminder(){
+  const banner = document.getElementById('backupReminderBanner');
+  if(Object.keys(data).length === 0){
+    banner.classList.remove('show');
+    return;
+  }
+  const last = parseInt(localStorage.getItem('mola_takip_lastbackup_v2') || '0', 10);
+  const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+  if(Date.now() - last >= threeDaysMs){
+    const daysAgo = last === 0 ? null : Math.floor((Date.now() - last) / (24*60*60*1000));
+    const text = daysAgo === null ? 'Henüz hiç yedek almadın' : `${daysAgo} gündür yedek almadın`;
+    banner.innerHTML = `<span>${text}</span><button class="banner-backup-btn" onclick="exportBackup()">Şimdi Yedekle</button>`;
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
 }
 
 function importBackup(event){
@@ -1444,17 +1662,38 @@ function renderAll(){
   renderPeriodSummary();
   renderAllTimeStats();
   drawChart();
+  checkBackupReminder();
 }
 
 applyTheme();
 document.getElementById('limitInput').value = dailyLimit;
 document.getElementById('alertInput').value = sessionAlertMinutes;
+document.getElementById('notifToggle').checked = notifEnabled;
 if(activeSession){
   startTick();
+  if(notifEnabled){ notifInterval = setInterval(showLiveNotification, 60000); }
 }
 renderAll();
 window.addEventListener('resize', drawChart);
 document.getElementById('chart').addEventListener('click', onChartClick);
+
+// Bildirimdeki "Bitir" aksiyonundan gelen komut
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', (event)=>{
+    if(event.data && event.data.type === 'stop-session'){
+      stopSession();
+    }
+  });
+}
+
+// Bildirime dokunup uygulama kapalıyken açıldıysa
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('stop') === '1' && activeSession){
+    stopSession();
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+})();
 
 // Kısayoldan (widget benzeri) gelen otomatik başlatma
 (function(){
