@@ -683,8 +683,8 @@
       <div class="label">Mesai</div>
     </div>
     <div class="stat">
-      <div class="num" id="periodCount">0</div>
-      <div class="label">Kayıt</div>
+      <div class="num" id="periodTotal">0dk</div>
+      <div class="label">Toplam</div>
     </div>
   </div>
 
@@ -916,15 +916,16 @@ function showLiveNotification(){
   if(!notifEnabled || !activeSession) return;
   if(!('serviceWorker' in navigator) || !('Notification' in window)) return;
   if(Notification.permission !== 'granted') return;
-  const elapsedMin = Math.floor((Date.now() - activeSession.start) / 60000);
+  const elapsedMs = Date.now() - activeSession.start;
   const label = TYPE_LABEL[activeSession.type];
   navigator.serviceWorker.ready.then(reg=>{
-    reg.showNotification(label + ' devam ediyor', {
-      body: 'Süre: ' + elapsedMin + ' dakika' + (activeSession.note ? ' · ' + activeSession.note : ''),
+    reg.showNotification(label + ' · ' + fmtDuration(elapsedMs), {
+      body: 'Devam ediyor' + (activeSession.note ? ' · ' + activeSession.note : ''),
       tag: 'mola-timer',
       renotify: false,
       silent: true,
       requireInteraction: true,
+      timestamp: activeSession.start,
       icon: 'icon-192.png',
       badge: 'icon-192.png',
       actions: [{ action: 'stop', title: 'Bitir' }]
@@ -1245,7 +1246,7 @@ function renderPeriodSummary(){
   document.getElementById('periodMolaTotal').textContent = fmtDuration(molaMs);
   document.getElementById('periodIsTotal').textContent = fmtDuration(isMs);
   document.getElementById('periodMesaiTotal').textContent = fmtDuration(mesaiMs);
-  document.getElementById('periodCount').textContent = count;
+  document.getElementById('periodTotal').textContent = fmtDuration(molaMs + isMs + mesaiMs);
 
   // Günlük limit uyarısı her zaman bugüne göre
   const todayEntries = data[todayKey()] || [];
